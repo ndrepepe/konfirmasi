@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { canViewAllBranches } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
-import { uploadAttachment } from "@/lib/storage";
+import { uploadAttachments } from "@/lib/storage";
 import {
   customerBaruSchema,
   pemenuhanPoSchema,
@@ -16,14 +16,18 @@ function allowedBranch(profileBranchId: string | null, requestedBranchId: string
   return canAll || (!!profileBranchId && profileBranchId === requestedBranchId);
 }
 
+function filesFromForm(formData: FormData, name: string) {
+  return formData.getAll(name).filter((value): value is File => value instanceof File);
+}
+
 export async function createCustomerBaru(formData: FormData) {
   const profile = await requireProfile();
   if (profile.role === "admin_cabang") redirect("/dashboard");
 
   const parsed = customerBaruSchema.parse(Object.fromEntries(formData));
   const supabase = await createClient();
-  const confirmation = await uploadAttachment(
-    formData.get("confirmation_file") as File | null,
+  const confirmation = await uploadAttachments(
+    filesFromForm(formData, "confirmation_file"),
     "customer-baru",
   );
 
@@ -46,9 +50,9 @@ export async function createPemenuhanPo(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const poFile = await uploadAttachment(formData.get("po_file") as File | null, "pemenuhan-po/po");
-  const confirmation = await uploadAttachment(
-    formData.get("confirmation_file") as File | null,
+  const poFile = await uploadAttachments(filesFromForm(formData, "po_file"), "pemenuhan-po/po");
+  const confirmation = await uploadAttachments(
+    filesFromForm(formData, "confirmation_file"),
     "pemenuhan-po/konfirmasi",
   );
 
@@ -70,7 +74,7 @@ export async function createPenagihan(formData: FormData) {
 
   const parsed = penagihanSchema.parse(Object.fromEntries(formData));
   const supabase = await createClient();
-  const proof = await uploadAttachment(formData.get("proof_file") as File | null, "penagihan");
+  const proof = await uploadAttachments(filesFromForm(formData, "proof_file"), "penagihan");
 
   const { error } = await supabase.from("penagihan_reports").insert({
     ...parsed,
