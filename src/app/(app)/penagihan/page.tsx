@@ -1,8 +1,9 @@
 import { createPenagihan } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
+import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getReports } from "@/lib/data";
 
@@ -24,7 +25,7 @@ export default async function PenagihanPage() {
           <form action={createPenagihan} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <Input label="Customer" name="customer_name" />
-            <FileInput
+            <MultiFileInput
               label="Bukti"
               name="proof_file"
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
