@@ -26,7 +26,7 @@ export function AppShell({
             </p>
             <h1 className="mt-1 text-xl font-semibold text-slate-950">Prosedur Cabang</h1>
           </div>
-          <nav className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-1 lg:flex-col lg:overflow-visible lg:py-5">
+          <nav className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-col lg:overflow-visible lg:pb-3 lg:pt-5">
             {items.map((item) => (
               <Link
                 key={item.href}
@@ -39,7 +39,7 @@ export function AppShell({
               </Link>
             ))}
           </nav>
-          <div className="border-t border-slate-200 p-4">
+          <div className="sticky bottom-0 border-t border-slate-200 bg-white p-4">
             <div className="rounded-md bg-slate-50 p-3">
               <p className="text-sm font-semibold text-slate-950">{profile.full_name}</p>
               <p className="mt-1 truncate text-xs text-slate-500">{profile.email}</p>
