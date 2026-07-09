@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
+import { NavPrefetcher } from "@/components/nav-prefetcher";
 import { navItems } from "@/lib/nav";
 import { canAccessMenu, roleLabels } from "@/lib/permissions";
 import type { Profile } from "@/lib/types";
@@ -16,6 +17,7 @@ export function AppShell({
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+      <NavPrefetcher hrefs={items.map((item) => item.href)} />
       <aside className="border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col">
           <div className="border-b border-slate-200 px-6 py-5">
@@ -29,6 +31,7 @@ export function AppShell({
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch
                 className="flex min-h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
               >
                 <item.icon className="h-4 w-4 text-teal-700" aria-hidden />
