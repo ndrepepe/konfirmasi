@@ -57,3 +57,13 @@ export async function uploadAttachment(file: File | null, folder: string) {
     size: file.size,
   };
 }
+
+export async function uploadAttachments(files: File[], folder: string) {
+  const uploaded = await Promise.all(
+    files
+      .filter((file) => file.size > 0)
+      .map((file) => uploadAttachment(file, folder)),
+  );
+
+  return uploaded.filter(Boolean);
+}
