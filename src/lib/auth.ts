@@ -1,9 +1,10 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
-export async function getCurrentProfile(): Promise<Profile | null> {
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   if (!isSupabaseConfigured()) return null;
 
   const supabase = await createClient();
@@ -21,7 +22,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 
   if (error || !data) return null;
   return data as unknown as Profile;
-}
+});
 
 export async function requireProfile() {
   const profile = await getCurrentProfile();
