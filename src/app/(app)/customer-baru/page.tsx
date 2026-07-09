@@ -1,8 +1,9 @@
 import { createCustomerBaru } from "@/app/actions/reports";
 import { BranchSelect } from "@/components/branch-select";
 import { Guard } from "@/components/app-shell";
+import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getReports } from "@/lib/data";
 
@@ -28,7 +29,11 @@ export default async function CustomerBaruPage() {
             <Input label="ID Customer" name="customer_id" />
             <Input label="Contact Person" name="contact_person" />
             <Input label="No HP" name="phone" />
-            <FileInput label="Bukti Konfirmasi (foto WA)" name="confirmation_file" accept="image/*" />
+            <MultiFileInput
+              label="Bukti Konfirmasi (foto WA)"
+              name="confirmation_file"
+              accept="image/*"
+            />
             <SubmitButton />
           </form>
         </Panel>
