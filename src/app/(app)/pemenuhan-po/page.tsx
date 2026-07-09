@@ -1,8 +1,9 @@
 import { createPemenuhanPo } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
+import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getReports } from "@/lib/data";
 
@@ -26,14 +27,18 @@ export default async function PemenuhanPoPage() {
             <Input label="Nama Customer" name="customer_name" />
             <Input label="Tanggal PO" name="po_date" type="date" />
             <Input label="No PO" name="po_number" />
-            <FileInput
+            <MultiFileInput
               label="File PO"
               name="po_file"
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
             />
             <Input label="Contact Person" name="contact_person" />
             <Input label="No HP" name="phone" />
-            <FileInput label="Bukti Konfirmasi (foto WA)" name="confirmation_file" accept="image/*" />
+            <MultiFileInput
+              label="Bukti Konfirmasi (foto WA)"
+              name="confirmation_file"
+              accept="image/*"
+            />
             <SubmitButton />
           </form>
         </Panel>
