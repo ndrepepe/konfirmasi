@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aplikasi Konfirmasi Prosedur
 
-## Getting Started
+Aplikasi web Next.js untuk pelaporan prosedur konfirmasi cabang dengan Supabase Auth, database Supabase, role-based access, dan upload lampiran ke Backblaze B2 via S3 compatible API.
 
-First, run the development server:
+## Fitur
+
+- Login email dan password memakai Supabase Auth.
+- Role: `super_user`, `accounting`, dan `admin_cabang`.
+- Super user mengakses semua menu, termasuk Seting User dan Data Cabang.
+- Accounting mengakses semua data cabang dan semua menu laporan.
+- Admin cabang hanya mengakses Pemenuhan PO untuk cabangnya sendiri.
+- Modul laporan: Customer Baru, Pemenuhan PO, Penagihan.
+- Lampiran disimpan ke Backblaze B2, bukan ke browser/client.
+
+## Setup
+
+1. Buat project Supabase.
+2. Jalankan SQL di `supabase/schema.sql` melalui Supabase SQL Editor.
+3. Isi `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+BACKBLAZE_ENDPOINT=https://s3.us-west-004.backblazeb2.com
+BACKBLAZE_REGION=us-west-004
+BACKBLAZE_BUCKET=
+BACKBLAZE_KEY_ID=
+BACKBLAZE_APPLICATION_KEY=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Buat user pertama di Supabase Auth, lalu masukkan profile super user pertama via SQL:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```sql
+insert into public.profiles (id, full_name, email, role, branch_id)
+values ('AUTH_USER_ID', 'Nama Super User', 'email@domain.com', 'super_user', null);
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. Jalankan aplikasi:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Buka `http://localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Catatan Backblaze
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Gunakan bucket private. Aplikasi menyimpan metadata file ke Supabase dalam bentuk JSON berisi key, nama file, tipe file, dan ukuran. File upload diproses di server action agar credential Backblaze tidak dikirim ke browser.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Key Backblaze yang pernah dibagikan di chat sebaiknya di-rotate sebelum production.
