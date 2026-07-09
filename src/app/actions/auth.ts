@@ -1,9 +1,16 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { isSupabaseConfigured } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signIn(formData: FormData) {
+  if (!isSupabaseConfigured()) {
+    redirect(
+      `/login?error=${encodeURIComponent("Login belum tersedia. Hubungi administrator aplikasi.")}`,
+    );
+  }
+
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const supabase = await createClient();
