@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { signIn } from "@/app/actions/auth";
 import { getCurrentProfile } from "@/lib/auth";
-import { isSupabaseConfigured } from "@/lib/config";
 
 export default async function LoginPage({
   searchParams,
@@ -25,11 +24,6 @@ export default async function LoginPage({
         {params.error ? (
           <div className="mt-5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {params.error}
-          </div>
-        ) : null}
-        {!isSupabaseConfigured() ? (
-          <div className="mt-5 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
-            Supabase belum dikonfigurasi. Isi `.env.local`, jalankan SQL schema, lalu restart dev server.
           </div>
         ) : null}
         <form action={signIn} className="mt-6 grid gap-4">
