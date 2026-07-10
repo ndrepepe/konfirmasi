@@ -23,7 +23,7 @@ async function getUsers() {
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; error?: string }>;
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
@@ -38,6 +38,11 @@ export default async function UsersPage({
       />
       <InputDataLayout>
         <Panel title={editingUser ? "Edit User" : "Tambah User"} className="flex min-h-0 flex-col">
+          {params.error ? (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {params.error}
+            </div>
+          ) : null}
           <form action={editingUser ? updateUser : createUser} className="grid gap-4">
             {editingUser ? <input type="hidden" name="id" value={editingUser.id} /> : null}
             <Input label="Nama User" name="full_name" defaultValue={editingUser?.full_name} />

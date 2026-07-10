@@ -9,6 +9,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { branchSchema, userSchema, userUpdateSchema } from "@/lib/validators";
 
+function redirectWithSettingsError(message: string): never {
+  const params = new URLSearchParams({ error: message });
+  redirect(`/settings/users?${params.toString()}`);
+}
+
 async function requireSuperUser() {
   const profile = await requireProfile();
   if (!canManageSettings(profile)) redirect("/dashboard");
@@ -65,31 +70,65 @@ export async function importBranches(formData: FormData) {
 
 export async function createUser(formData: FormData) {
   await requireSuperUser();
-  const parsed = userSchema.parse(Object.fromEntries(formData));
-  const admin = createAdminClient();
-
-  if (parsed.role === "admin_cabang" && !parsed.branch_id) {
-    throw new Error("Admin cabang wajib memiliki cabang.");
+  const parsedResult = userSchema.safeParse(Object.fromEntries(formData));
+  if (!parsedResult.success) {
+    redirectWithSettingsError(parsedResult.error.issues[0]?.message ?? "Data user tidak valid.");
   }
 
-  const { data, error } = await admin.auth.admin.createUser({
-    email: parsed.email,
-    password: parsed.password,
-    email_confirm: true,
-    user_metadata: { full_name: parsed.full_name },
-  });
+  const parsed = parsedResult.data;
+  if (parsed.role === "admin_cabang" && !parsed.branch_id) {
+    redirectWithSettingsError("Admin cabang wajib memiliki cabang.");
+  }
 
-  if (error || !data.user) throw new Error(error?.message ?? "Gagal membuat user.");
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (error) {
+    redirectWithSettingsError(error instanceof Error ? error.message : "Gagal membuat user.");
+  }
 
-  const { error: profileError } = await admin.from("profiles").insert({
-    id: data.user.id,
-    full_name: parsed.full_name,
-    email: parsed.email,
-    role: parsed.role,
-    branch_id: parsed.branch_id || null,
-  });
+  let userId = "";
+  let createErrorMessage = "";
+  try {
+    const { data, error } = await admin.auth.admin.createUser({
+      email: parsed.email,
+      password: parsed.password,
+      email_confirm: true,
+      user_metadata: { full_name: parsed.full_name },
+    });
 
-  if (profileError) throw new Error(profileError.message);
+    if (error || !data.user) {
+      createErrorMessage = error?.message?.toLowerCase().includes("already")
+        ? "Email user sudah terdaftar."
+        : (error?.message ?? "Gagal membuat user.");
+    } else {
+      userId = data.user.id;
+    }
+  } catch (error) {
+    createErrorMessage = error instanceof Error ? error.message : "Gagal membuat user.";
+  }
+  if (createErrorMessage) redirectWithSettingsError(createErrorMessage);
+  if (!userId) redirectWithSettingsError("Gagal membuat user.");
+
+  let profileErrorMessage = "";
+  try {
+    const { error: profileError } = await admin.from("profiles").upsert(
+      {
+        id: userId,
+        full_name: parsed.full_name,
+        email: parsed.email,
+        role: parsed.role,
+        branch_id: parsed.branch_id || null,
+      },
+      { onConflict: "id" },
+    );
+
+    if (profileError) profileErrorMessage = profileError.message;
+  } catch (error) {
+    profileErrorMessage = error instanceof Error ? error.message : "Gagal membuat user.";
+  }
+  if (profileErrorMessage) redirectWithSettingsError(profileErrorMessage);
+
   revalidatePath("/settings/users");
   redirect("/settings/users?created=1");
 }
