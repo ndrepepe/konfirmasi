@@ -17,6 +17,7 @@ export const masterStatusSchema = z.enum(["Aktif", "Nonaktif"]);
 
 export const salesSchema = z.object({
   sales_code: z.string().min(1, "ID Sales wajib diisi").max(50),
+  branch_id: z.string().uuid(),
   sales_name: z.string().min(2, "Nama sales wajib diisi").max(160),
   status: masterStatusSchema,
 });

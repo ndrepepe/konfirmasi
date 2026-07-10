@@ -16,6 +16,7 @@ export function SalesSelect({
       {sales.map((item) => (
         <option key={item.id} value={item.sales_name}>
           {item.sales_code} - {item.sales_name}
+          {item.branches?.name ? ` (${item.branches.name})` : ""}
         </option>
       ))}
     </Select>

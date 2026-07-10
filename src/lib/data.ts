@@ -16,10 +16,10 @@ export async function getSales() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("data_sales")
-    .select("id, sales_code, sales_name, status")
+    .select("id, sales_code, branch_id, sales_name, status, branches(id, code, name)")
     .order("sales_name");
   if (error) throw new Error(error.message);
-  return (data ?? []) as Sales[];
+  return (data ?? []) as unknown as Sales[];
 }
 
 export async function getActiveSales() {

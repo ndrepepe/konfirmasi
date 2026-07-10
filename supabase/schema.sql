@@ -22,6 +22,7 @@ create table public.profiles (
 create table public.data_sales (
   id uuid primary key default gen_random_uuid(),
   sales_code text not null unique,
+  branch_id uuid references public.branches(id),
   sales_name text not null,
   status text not null default 'Aktif' check (status in ('Aktif', 'Nonaktif')),
   created_at timestamptz not null default now()
@@ -75,6 +76,7 @@ create table public.penagihan_reports (
 );
 
 create index profiles_branch_id_idx on public.profiles(branch_id);
+create index data_sales_branch_id_idx on public.data_sales(branch_id);
 create index data_customers_branch_id_idx on public.data_customers(branch_id);
 create index customer_baru_branch_id_idx on public.customer_baru_reports(branch_id);
 create index pemenuhan_po_branch_id_idx on public.pemenuhan_po_reports(branch_id);

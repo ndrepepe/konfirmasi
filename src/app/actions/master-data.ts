@@ -43,21 +43,40 @@ export async function importSales(formData: FormData) {
   await requireMasterAccess();
   const rows = await readExcelRows(formData.get("excel_file") as File | null, {
     "id sales": "sales_code",
+    cabang: "branch_code",
+    "kode cabang": "branch_code",
+    "nama cabang": "branch_code",
     "nama sales": "sales_name",
     status: "status",
   });
 
+  if (!rows.length) throw new Error("Tidak ada data sales yang bisa diimport.");
+
+  const branchCodes = Array.from(new Set(rows.map((row) => row.branch_code).filter(Boolean)));
+  const supabase = await createClient();
+  const { data: branches, error: branchError } = await supabase
+    .from("branches")
+    .select("id, code, name");
+  if (branchError) throw new Error(branchError.message);
+
+  const branchMap = new Map<string, string>();
+  (branches ?? []).forEach((branch) => {
+    branchMap.set(normalizeBranchKey(branch.code), branch.id);
+    branchMap.set(normalizeBranchKey(branch.name), branch.id);
+  });
+
+  const missing = branchCodes.filter((code) => !branchMap.has(normalizeBranchKey(code)));
+  if (missing.length) throw new Error(`Cabang tidak ditemukan: ${missing.join(", ")}`);
+
   const parsed = rows.map((row) =>
     salesSchema.parse({
       sales_code: row.sales_code,
+      branch_id: branchMap.get(normalizeBranchKey(row.branch_code)),
       sales_name: row.sales_name,
       status: row.status || "Aktif",
     }),
   );
 
-  if (!parsed.length) throw new Error("Tidak ada data sales yang bisa diimport.");
-
-  const supabase = await createClient();
   for (const chunk of chunkRows(parsed, importBatchSize)) {
     const { error } = await supabase.from("data_sales").upsert(chunk, {
       onConflict: "sales_code",

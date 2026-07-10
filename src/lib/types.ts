@@ -11,8 +11,10 @@ export type MasterStatus = "Aktif" | "Nonaktif";
 export type Sales = {
   id: string;
   sales_code: string;
+  branch_id: string | null;
   sales_name: string;
   status: MasterStatus;
+  branches?: Branch | null;
 };
 
 export type Customer = {
