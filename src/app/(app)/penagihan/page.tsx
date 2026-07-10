@@ -1,17 +1,19 @@
 import { createPenagihan } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
+import { CustomerSelect } from "@/components/customer-select";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getBranches, getReports } from "@/lib/data";
+import { getActiveCustomers, getBranches, getReports } from "@/lib/data";
 
 export default async function PenagihanPage() {
   const profile = await requireProfile();
-  const [branches, rows] = await Promise.all([
+  const [branches, rows, customers] = await Promise.all([
     getBranches(),
     getReports("penagihan_reports", profile),
+    getActiveCustomers(profile),
   ]);
 
   return (
@@ -24,7 +26,7 @@ export default async function PenagihanPage() {
         <Panel title="Form Penagihan">
           <form action={createPenagihan} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
-            <Input label="Customer" name="customer_name" />
+            <CustomerSelect customers={customers} />
             <MultiFileInput
               label="Bukti"
               name="proof_file"
