@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { canViewAllBranches } from "@/lib/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { uploadAttachments } from "@/lib/storage";
 import {
@@ -55,6 +56,40 @@ export async function createCustomerBaru(formData: FormData) {
   redirect("/customer-baru?created=1");
 }
 
+export async function updateCustomerBaru(formData: FormData) {
+  const profile = await requireProfile();
+  if (profile.role === "admin_cabang") redirect("/dashboard");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID laporan customer baru tidak ditemukan.");
+  const parsed = customerBaruSchema.parse(Object.fromEntries(formData));
+  const admin = createAdminClient();
+  const confirmation = await uploadAttachments(
+    filesFromForm(formData, "confirmation_file"),
+    "customer-baru",
+  );
+
+  const updatePayload: Record<string, unknown> = { ...parsed };
+  if (confirmation.length) updatePayload.confirmation_file = confirmation;
+
+  const { error: customerError } = await admin.from("data_customers").upsert(
+    {
+      customer_code: parsed.customer_id,
+      branch_id: parsed.branch_id,
+      customer_name: parsed.customer_new,
+      status: "Aktif",
+    },
+    { onConflict: "customer_code" },
+  );
+  if (customerError) throw new Error(customerError.message);
+
+  const { error } = await admin.from("customer_baru_reports").update(updatePayload).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/customer-baru");
+  revalidatePath("/data-customer");
+  redirect("/customer-baru?updated=1");
+}
+
 export async function createPemenuhanPo(formData: FormData) {
   const profile = await requireProfile();
   const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
@@ -81,6 +116,35 @@ export async function createPemenuhanPo(formData: FormData) {
   redirect("/pemenuhan-po?created=1");
 }
 
+export async function updatePemenuhanPo(formData: FormData) {
+  const profile = await requireProfile();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID laporan pemenuhan PO tidak ditemukan.");
+  const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
+  if (!allowedBranch(profile.branch_id, parsed.branch_id, canViewAllBranches(profile))) {
+    throw new Error("Anda hanya bisa edit data cabang sendiri.");
+  }
+
+  const admin = createAdminClient();
+  const poFile = await uploadAttachments(filesFromForm(formData, "po_file"), "pemenuhan-po/po");
+  const confirmation = await uploadAttachments(
+    filesFromForm(formData, "confirmation_file"),
+    "pemenuhan-po/konfirmasi",
+  );
+  const updatePayload: Record<string, unknown> = { ...parsed };
+  if (poFile.length) updatePayload.po_file = poFile;
+  if (confirmation.length) updatePayload.confirmation_file = confirmation;
+
+  let query = admin.from("pemenuhan_po_reports").update(updatePayload).eq("id", id);
+  if (!canViewAllBranches(profile) && profile.branch_id) {
+    query = query.eq("branch_id", profile.branch_id);
+  }
+  const { error } = await query;
+  if (error) throw new Error(error.message);
+  revalidatePath("/pemenuhan-po");
+  redirect("/pemenuhan-po?updated=1");
+}
+
 export async function createPenagihan(formData: FormData) {
   const profile = await requireProfile();
   if (profile.role === "admin_cabang") redirect("/dashboard");
@@ -98,4 +162,22 @@ export async function createPenagihan(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/penagihan");
   redirect("/penagihan?created=1");
+}
+
+export async function updatePenagihan(formData: FormData) {
+  const profile = await requireProfile();
+  if (profile.role === "admin_cabang") redirect("/dashboard");
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID laporan penagihan tidak ditemukan.");
+  const parsed = penagihanSchema.parse(Object.fromEntries(formData));
+  const admin = createAdminClient();
+  const proof = await uploadAttachments(filesFromForm(formData, "proof_file"), "penagihan");
+  const updatePayload: Record<string, unknown> = { ...parsed };
+  if (proof.length) updatePayload.proof_file = proof;
+
+  const { error } = await admin.from("penagihan_reports").update(updatePayload).eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/penagihan");
+  redirect("/penagihan?updated=1");
 }

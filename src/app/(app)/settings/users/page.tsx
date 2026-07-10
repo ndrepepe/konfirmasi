@@ -1,4 +1,5 @@
-import { createUser } from "@/app/actions/settings";
+import Link from "next/link";
+import { createUser, updateUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
 import { SearchableSelect } from "@/components/searchable-select";
@@ -19,9 +20,15 @@ async function getUsers() {
   return (data ?? []) as unknown as Profile[];
 }
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
   const profile = await requireProfile();
+  const params = await searchParams;
   const [branches, users] = await Promise.all([getBranches(), getUsers()]);
+  const editingUser = users.find((user) => user.id === params.edit);
 
   return (
     <Guard profile={profile} href="/settings/users">
@@ -30,15 +37,16 @@ export default async function UsersPage() {
         description="Buat user baru, tentukan role, dan kaitkan admin cabang ke cabang masing-masing."
       />
       <InputDataLayout>
-        <Panel title="Tambah User" className="flex min-h-0 flex-col">
-          <form action={createUser} className="grid gap-4">
-            <Input label="Nama User" name="full_name" />
-            <Input label="Email" name="email" type="email" />
-            <Input label="Password Awal" name="password" type="password" />
+        <Panel title={editingUser ? "Edit User" : "Tambah User"} className="flex min-h-0 flex-col">
+          <form action={editingUser ? updateUser : createUser} className="grid gap-4">
+            {editingUser ? <input type="hidden" name="id" value={editingUser.id} /> : null}
+            <Input label="Nama User" name="full_name" defaultValue={editingUser?.full_name} />
+            <Input label="Email" name="email" type="email" defaultValue={editingUser?.email} />
+            {!editingUser ? <Input label="Password Awal" name="password" type="password" /> : null}
             <SearchableSelect
               label="Role"
               name="role"
-              defaultValue={roleOptions[0]?.value}
+              defaultValue={editingUser?.role ?? roleOptions[0]?.value}
               options={roleOptions.map((role) => ({
                 value: role.value,
                 label: role.label,
@@ -49,19 +57,31 @@ export default async function UsersPage() {
               name="branch_id"
               required={false}
               placeholder="Tanpa cabang / semua cabang"
+              defaultValue={editingUser?.branch_id ?? ""}
               options={branches.map((branch) => ({
                 value: branch.id,
                 label: `${branch.code} - ${branch.name}`,
                 searchText: `${branch.code} ${branch.name}`,
               }))}
             />
-            <SubmitButton>Buat User</SubmitButton>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <SubmitButton>{editingUser ? "Update User" : "Buat User"}</SubmitButton>
+              {editingUser ? (
+                <Link
+                  href="/settings/users"
+                  className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:h-10"
+                >
+                  Batal
+                </Link>
+              ) : null}
+            </div>
           </form>
         </Panel>
         <Panel title="Daftar User" className="flex min-h-0 flex-col">
           <SearchableTable
             rows={users.map((user) => ({
               id: user.id,
+              editHref: `/settings/users?edit=${user.id}`,
               cells: {
                 full_name: user.full_name,
                 email: user.email,

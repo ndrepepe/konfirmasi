@@ -1,4 +1,5 @@
-import { createBranch, importBranches } from "@/app/actions/settings";
+import Link from "next/link";
+import { createBranch, importBranches, updateBranch } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
 import {
@@ -12,9 +13,15 @@ import {
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 
-export default async function BranchesPage() {
+export default async function BranchesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
   const profile = await requireProfile();
+  const params = await searchParams;
   const branches = await getBranches();
+  const editingBranch = branches.find((branch) => branch.id === params.edit);
 
   return (
     <Guard profile={profile} href="/settings/branches">
@@ -24,11 +31,22 @@ export default async function BranchesPage() {
       />
       <CompactInputDataLayout>
         {profile.role === "super_user" ? (
-          <Panel title="Tambah Cabang" className="flex min-h-0 flex-col">
-            <form action={createBranch} className="grid gap-4">
-              <Input label="Kode Cabang" name="code" />
-              <Input label="Nama Cabang" name="name" />
-              <SubmitButton />
+          <Panel title={editingBranch ? "Edit Cabang" : "Tambah Cabang"} className="flex min-h-0 flex-col">
+            <form action={editingBranch ? updateBranch : createBranch} className="grid gap-4">
+              {editingBranch ? <input type="hidden" name="id" value={editingBranch.id} /> : null}
+              <Input label="Kode Cabang" name="code" defaultValue={editingBranch?.code} />
+              <Input label="Nama Cabang" name="name" defaultValue={editingBranch?.name} />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <SubmitButton>{editingBranch ? "Update" : "Simpan"}</SubmitButton>
+                {editingBranch ? (
+                  <Link
+                    href="/settings/branches"
+                    className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:h-10"
+                  >
+                    Batal
+                  </Link>
+                ) : null}
+              </div>
             </form>
             <div className="mt-6 border-t border-slate-200 pt-5">
               <a
@@ -48,6 +66,7 @@ export default async function BranchesPage() {
           <SearchableTable
             rows={branches.map((branch) => ({
               id: branch.id,
+              editHref: profile.role === "super_user" ? `/settings/branches?edit=${branch.id}` : undefined,
               cells: {
                 code: branch.code,
                 name: branch.name,

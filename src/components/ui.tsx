@@ -51,11 +51,13 @@ export function Input({
   name,
   type = "text",
   required = true,
+  defaultValue,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
+  defaultValue?: string;
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-medium text-slate-700">
@@ -64,6 +66,7 @@ export function Input({
         name={name}
         type={type}
         required={required}
+        defaultValue={defaultValue}
         className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
       />
     </label>
@@ -75,11 +78,13 @@ export function Select({
   name,
   children,
   required = true,
+  defaultValue,
 }: {
   label: string;
   name: string;
   children: React.ReactNode;
   required?: boolean;
+  defaultValue?: string;
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-medium text-slate-700">
@@ -87,6 +92,7 @@ export function Select({
       <select
         name={name}
         required={required}
+        defaultValue={defaultValue}
         className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
       >
         {children}

@@ -4,9 +4,11 @@ import type { ReportRow } from "@/lib/types";
 export function ReportTable({
   rows,
   columns,
+  editHrefBase,
 }: {
   rows: ReportRow[];
   columns: Array<{ key: string; label: string }>;
+  editHrefBase?: string;
 }) {
   const tableColumns: SearchableColumn[] = [
     { key: "branch", label: "Cabang", filterable: true, strong: true },
@@ -17,6 +19,7 @@ export function ReportTable({
 
   const tableRows = rows.map((row) => ({
     id: row.id,
+    editHref: editHrefBase ? `${editHrefBase}?edit=${row.id}` : undefined,
     cells: {
       branch: row.branches?.code ?? "-",
       ...Object.fromEntries(columns.map((column) => [column.key, String(row[column.key] ?? "-")])),

@@ -13,6 +13,8 @@ export const userSchema = z.object({
   branch_id: z.string().uuid().optional().or(z.literal("")),
 });
 
+export const userUpdateSchema = userSchema.omit({ password: true });
+
 export const masterStatusSchema = z.enum(["Aktif", "Nonaktif"]);
 
 export const salesSchema = z.object({

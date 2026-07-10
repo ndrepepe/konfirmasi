@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SearchableSelect } from "@/components/searchable-select";
 
@@ -14,6 +15,7 @@ export type SearchableColumn = {
 export type SearchableRow = {
   id: string;
   cells: Record<string, string>;
+  editHref?: string;
 };
 
 export function SearchableTable({
@@ -124,6 +126,9 @@ export function SearchableTable({
                     {column.label}
                   </th>
                 ))}
+                {rows.some((row) => row.editHref) ? (
+                  <th className="whitespace-nowrap px-3 py-3 sm:px-4">Tindakan</th>
+                ) : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -141,6 +146,20 @@ export function SearchableTable({
                       {row.cells[column.key] || "-"}
                     </td>
                   ))}
+                  {rows.some((item) => item.editHref) ? (
+                    <td className="whitespace-nowrap px-3 py-3 sm:px-4">
+                      {row.editHref ? (
+                        <Link
+                          href={row.editHref}
+                          className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          Edit
+                        </Link>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

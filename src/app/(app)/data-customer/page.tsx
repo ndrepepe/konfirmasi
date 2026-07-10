@@ -1,4 +1,5 @@
-import { createCustomerData } from "@/app/actions/master-data";
+import Link from "next/link";
+import { createCustomerData, updateCustomerData } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerExcelImporter } from "@/components/customer-excel-importer";
@@ -17,6 +18,7 @@ export default async function DataCustomerPage({
     q?: string;
     branch_id?: string;
     status?: string;
+    edit?: string;
   }>;
 }) {
   const profile = await requireProfile();
@@ -30,6 +32,15 @@ export default async function DataCustomerPage({
       limit: 500,
     }),
   ]);
+  const editingCustomer = customers.find((customer) => customer.id === params.edit);
+  const editHrefFor = (id: string) => {
+    const query = new URLSearchParams();
+    if (params.q) query.set("q", params.q);
+    if (params.branch_id) query.set("branch_id", params.branch_id);
+    if (params.status) query.set("status", params.status);
+    query.set("edit", id);
+    return `/data-customer?${query.toString()}`;
+  };
 
   return (
     <Guard profile={profile} href="/data-customer">
@@ -38,13 +49,24 @@ export default async function DataCustomerPage({
         description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
       />
       <CompactInputDataLayout>
-        <Panel title="Tambah Customer" className="flex min-h-0 flex-col">
-          <form action={createCustomerData} className="grid gap-4">
-            <Input label="ID Customer" name="customer_code" />
-            <BranchSelect branches={branches} profile={profile} />
-            <Input label="Nama Customer" name="customer_name" />
-            <StatusSelect />
-            <SubmitButton />
+        <Panel title={editingCustomer ? "Edit Customer" : "Tambah Customer"} className="flex min-h-0 flex-col">
+          <form action={editingCustomer ? updateCustomerData : createCustomerData} className="grid gap-4">
+            {editingCustomer ? <input type="hidden" name="id" value={editingCustomer.id} /> : null}
+            <Input label="ID Customer" name="customer_code" defaultValue={editingCustomer?.customer_code} />
+            <BranchSelect branches={branches} profile={profile} defaultValue={editingCustomer?.branch_id} />
+            <Input label="Nama Customer" name="customer_name" defaultValue={editingCustomer?.customer_name} />
+            <StatusSelect defaultValue={editingCustomer?.status ?? "Aktif"} />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <SubmitButton>{editingCustomer ? "Update" : "Simpan"}</SubmitButton>
+              {editingCustomer ? (
+                <Link
+                  href="/data-customer"
+                  className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:h-10"
+                >
+                  Batal
+                </Link>
+              ) : null}
+            </div>
           </form>
           <CustomerExcelImporter branches={branches} />
         </Panel>
@@ -94,6 +116,7 @@ export default async function DataCustomerPage({
           <SearchableTable
             rows={customers.map((customer) => ({
               id: customer.id,
+              editHref: editHrefFor(customer.id),
               cells: {
                 customer_code: customer.customer_code,
                 branch: customer.branches?.name ?? "-",

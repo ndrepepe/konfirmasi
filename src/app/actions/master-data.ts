@@ -39,6 +39,20 @@ export async function createSales(formData: FormData) {
   redirect("/data-sales?created=1");
 }
 
+export async function updateSales(formData: FormData) {
+  await requireMasterAccess();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID data sales tidak ditemukan.");
+  const parsed = salesSchema.parse(Object.fromEntries(formData));
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("data_sales").update(parsed).eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/data-sales");
+  redirect("/data-sales?updated=1");
+}
+
 export async function importSales(formData: FormData) {
   await requireMasterAccess();
   const rows = await readExcelRows(formData.get("excel_file") as File | null, {
@@ -98,6 +112,20 @@ export async function createCustomerData(formData: FormData) {
 
   revalidatePath("/data-customer");
   redirect("/data-customer?created=1");
+}
+
+export async function updateCustomerData(formData: FormData) {
+  await requireMasterAccess();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID data customer tidak ditemukan.");
+  const parsed = customerDataSchema.parse(Object.fromEntries(formData));
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("data_customers").update(parsed).eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/data-customer");
+  redirect("/data-customer?updated=1");
 }
 
 export async function importCustomerData(formData: FormData) {

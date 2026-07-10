@@ -5,9 +5,11 @@ import type { Branch, Profile } from "@/lib/types";
 export function BranchSelect({
   branches,
   profile,
+  defaultValue,
 }: {
   branches: Branch[];
   profile: Profile;
+  defaultValue?: string;
 }) {
   const options = canViewAllBranches(profile)
     ? branches
@@ -18,6 +20,7 @@ export function BranchSelect({
       label="Cabang"
       name="branch_id"
       placeholder="Pilih cabang"
+      defaultValue={defaultValue}
       options={options.map((branch) => ({
         value: branch.id,
         label: `${branch.code} - ${branch.name}`,
