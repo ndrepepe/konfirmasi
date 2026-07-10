@@ -21,6 +21,10 @@ function normalizeValue(value: unknown) {
   return String(value ?? "").trim();
 }
 
+function normalizeBranchKey(value: unknown) {
+  return normalizeValue(value).toLowerCase();
+}
+
 function chunkRows<T>(rows: T[], size: number) {
   const chunks: T[][] = [];
   for (let index = 0; index < rows.length; index += size) {
@@ -35,10 +39,14 @@ export function CustomerExcelImporter({ branches }: { branches: Branch[] }) {
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState({ done: 0, total: 0 });
 
-  const branchMap = useMemo(
-    () => new Map(branches.map((branch) => [branch.code.trim(), branch.id])),
-    [branches],
-  );
+  const branchMap = useMemo(() => {
+    const map = new Map<string, string>();
+    branches.forEach((branch) => {
+      map.set(normalizeBranchKey(branch.code), branch.id);
+      map.set(normalizeBranchKey(branch.name), branch.id);
+    });
+    return map;
+  }, [branches]);
 
   async function handleImport(formData: FormData) {
     const file = formData.get("excel_file");
@@ -60,7 +68,9 @@ export function CustomerExcelImporter({ branches }: { branches: Branch[] }) {
 
       const headerMap: Record<string, string> = {
         "id customer": "customer_code",
+        cabang: "branch_code",
         "kode cabang": "branch_code",
+        "nama cabang": "branch_code",
         "nama customer": "customer_name",
         status: "status",
       };
@@ -82,7 +92,7 @@ export function CustomerExcelImporter({ branches }: { branches: Branch[] }) {
         new Set(
           normalizedRows
             .map((row) => row.branch_code)
-            .filter((code) => code && !branchMap.has(code)),
+            .filter((code) => code && !branchMap.has(normalizeBranchKey(code))),
         ),
       );
       if (missingBranches.length) {
@@ -100,7 +110,7 @@ export function CustomerExcelImporter({ branches }: { branches: Branch[] }) {
 
         return {
           customer_code: row.customer_code,
-          branch_id: branchMap.get(row.branch_code)!,
+          branch_id: branchMap.get(normalizeBranchKey(row.branch_code))!,
           customer_name: row.customer_name,
           status: statusValue,
         };

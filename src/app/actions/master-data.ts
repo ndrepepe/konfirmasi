@@ -17,6 +17,10 @@ function chunkRows<T>(rows: T[], size: number) {
   return chunks;
 }
 
+function normalizeBranchKey(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
 async function requireMasterAccess() {
   const profile = await requireProfile();
   if (profile.role === "admin_cabang") redirect("/dashboard");
@@ -81,7 +85,9 @@ export async function importCustomerData(formData: FormData) {
   await requireMasterAccess();
   const rows = await readExcelRows(formData.get("excel_file") as File | null, {
     "id customer": "customer_code",
+    cabang: "branch_code",
     "kode cabang": "branch_code",
+    "nama cabang": "branch_code",
     "nama customer": "customer_name",
     status: "status",
   });
@@ -92,18 +98,22 @@ export async function importCustomerData(formData: FormData) {
   const supabase = await createClient();
   const { data: branches, error: branchError } = await supabase
     .from("branches")
-    .select("id, code")
-    .in("code", branchCodes);
+    .select("id, code, name");
   if (branchError) throw new Error(branchError.message);
 
-  const branchMap = new Map((branches ?? []).map((branch) => [branch.code, branch.id]));
-  const missing = branchCodes.filter((code) => !branchMap.has(code));
-  if (missing.length) throw new Error(`Kode cabang tidak ditemukan: ${missing.join(", ")}`);
+  const branchMap = new Map<string, string>();
+  (branches ?? []).forEach((branch) => {
+    branchMap.set(normalizeBranchKey(branch.code), branch.id);
+    branchMap.set(normalizeBranchKey(branch.name), branch.id);
+  });
+
+  const missing = branchCodes.filter((code) => !branchMap.has(normalizeBranchKey(code)));
+  if (missing.length) throw new Error(`Cabang tidak ditemukan: ${missing.join(", ")}`);
 
   const parsed = rows.map((row) =>
     customerDataSchema.parse({
       customer_code: row.customer_code,
-      branch_id: branchMap.get(row.branch_code),
+      branch_id: branchMap.get(normalizeBranchKey(row.branch_code)),
       customer_name: row.customer_name,
       status: row.status || "Aktif",
     }),
