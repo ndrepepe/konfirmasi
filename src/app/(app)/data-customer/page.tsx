@@ -1,8 +1,9 @@
 import { createCustomerData, importCustomerData } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
+import { SearchableTable } from "@/components/searchable-table";
 import { StatusSelect } from "@/components/status-select";
-import { EmptyState, FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
 
@@ -39,40 +40,24 @@ export default async function DataCustomerPage() {
           </div>
         </Panel>
         <Panel title="Daftar Customer">
-          {customers.length ? (
-            <div className="overflow-x-auto rounded-md border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  <tr>
-                    <th className="px-4 py-3">ID Customer</th>
-                    <th className="px-4 py-3">Cabang</th>
-                    <th className="px-4 py-3">Nama Customer</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {customers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-950">
-                        {customer.customer_code}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {customer.branches?.code ?? "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {customer.customer_name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {customer.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState label="Belum ada data customer." />
-          )}
+          <SearchableTable
+            rows={customers.map((customer) => ({
+              id: customer.id,
+              cells: {
+                customer_code: customer.customer_code,
+                branch: customer.branches?.code ?? "-",
+                customer_name: customer.customer_name,
+                status: customer.status,
+              },
+            }))}
+            columns={[
+              { key: "customer_code", label: "ID Customer", strong: true },
+              { key: "branch", label: "Cabang", filterable: true },
+              { key: "customer_name", label: "Nama Customer" },
+              { key: "status", label: "Status", filterable: true },
+            ]}
+            emptyLabel="Belum ada data customer."
+          />
         </Panel>
       </div>
     </Guard>

@@ -1,6 +1,7 @@
 import { createBranch, importBranches } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
-import { EmptyState, FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { SearchableTable } from "@/components/searchable-table";
+import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 
@@ -41,28 +42,20 @@ export default async function BranchesPage() {
           </Panel>
         ) : null}
         <Panel title="Daftar Cabang">
-          {branches.length ? (
-            <div className="overflow-x-auto rounded-md border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  <tr>
-                    <th className="px-4 py-3">Kode</th>
-                    <th className="px-4 py-3">Nama Cabang</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {branches.map((branch) => (
-                    <tr key={branch.id}>
-                      <td className="px-4 py-3 font-semibold text-slate-950">{branch.code}</td>
-                      <td className="px-4 py-3 text-slate-700">{branch.name}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState label="Belum ada cabang." />
-          )}
+          <SearchableTable
+            rows={branches.map((branch) => ({
+              id: branch.id,
+              cells: {
+                code: branch.code,
+                name: branch.name,
+              },
+            }))}
+            columns={[
+              { key: "code", label: "Kode", strong: true },
+              { key: "name", label: "Nama Cabang" },
+            ]}
+            emptyLabel="Belum ada cabang."
+          />
         </Panel>
       </div>
     </Guard>

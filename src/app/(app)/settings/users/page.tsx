@@ -1,6 +1,7 @@
 import { createUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
-import { EmptyState, Input, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
+import { SearchableTable } from "@/components/searchable-table";
+import { Input, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 import { roleLabels, roleOptions } from "@/lib/permissions";
@@ -52,40 +53,24 @@ export default async function UsersPage() {
           </form>
         </Panel>
         <Panel title="Daftar User">
-          {users.length ? (
-            <div className="overflow-x-auto rounded-md border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  <tr>
-                    <th className="px-4 py-3">Nama</th>
-                    <th className="px-4 py-3">Email</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Cabang</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-950">
-                        {user.full_name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {user.email}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {roleLabels[user.role]}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {user.branches?.name ?? "Semua cabang"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState label="Belum ada user." />
-          )}
+          <SearchableTable
+            rows={users.map((user) => ({
+              id: user.id,
+              cells: {
+                full_name: user.full_name,
+                email: user.email,
+                role: roleLabels[user.role],
+                branch: user.branches?.name ?? "Semua cabang",
+              },
+            }))}
+            columns={[
+              { key: "full_name", label: "Nama", strong: true },
+              { key: "email", label: "Email" },
+              { key: "role", label: "Role", filterable: true },
+              { key: "branch", label: "Cabang", filterable: true },
+            ]}
+            emptyLabel="Belum ada user."
+          />
         </Panel>
       </div>
     </Guard>

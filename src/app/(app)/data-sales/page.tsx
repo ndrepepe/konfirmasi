@@ -1,6 +1,7 @@
 import { createSales, importSales } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
-import { EmptyState, FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { SearchableTable } from "@/components/searchable-table";
+import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { StatusSelect } from "@/components/status-select";
 import { requireProfile } from "@/lib/auth";
 import { getSales } from "@/lib/data";
@@ -37,36 +38,22 @@ export default async function DataSalesPage() {
           </div>
         </Panel>
         <Panel title="Daftar Sales">
-          {sales.length ? (
-            <div className="overflow-x-auto rounded-md border border-slate-200">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
-                  <tr>
-                    <th className="px-4 py-3">ID Sales</th>
-                    <th className="px-4 py-3">Nama Sales</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {sales.map((item) => (
-                    <tr key={item.id}>
-                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-950">
-                        {item.sales_code}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {item.sales_name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-slate-700">
-                        {item.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState label="Belum ada data sales." />
-          )}
+          <SearchableTable
+            rows={sales.map((item) => ({
+              id: item.id,
+              cells: {
+                sales_code: item.sales_code,
+                sales_name: item.sales_name,
+                status: item.status,
+              },
+            }))}
+            columns={[
+              { key: "sales_code", label: "ID Sales", strong: true },
+              { key: "sales_name", label: "Nama Sales" },
+              { key: "status", label: "Status", filterable: true },
+            ]}
+            emptyLabel="Belum ada data sales."
+          />
         </Panel>
       </div>
     </Guard>
