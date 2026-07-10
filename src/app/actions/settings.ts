@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
+import { readExcelRows } from "@/lib/excel-import";
 import { canManageSettings } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,32 @@ export async function createBranch(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/settings/branches");
   redirect("/settings/branches?created=1");
+}
+
+export async function importBranches(formData: FormData) {
+  await requireSuperUser();
+  const rows = await readExcelRows(formData.get("excel_file") as File | null, {
+    "kode cabang": "code",
+    "nama cabang": "name",
+  });
+
+  const parsed = rows.map((row) =>
+    branchSchema.parse({
+      code: row.code,
+      name: row.name,
+    }),
+  );
+
+  if (!parsed.length) throw new Error("Tidak ada data cabang yang bisa diimport.");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("branches").upsert(parsed, {
+    onConflict: "code",
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/settings/branches");
+  redirect("/settings/branches?imported=1");
 }
 
 export async function createUser(formData: FormData) {

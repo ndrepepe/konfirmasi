@@ -1,6 +1,6 @@
-import { createBranch } from "@/app/actions/settings";
+import { createBranch, importBranches } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
-import { EmptyState, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { EmptyState, FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 
@@ -26,6 +26,18 @@ export default async function BranchesPage() {
               <Input label="Nama Cabang" name="name" />
               <SubmitButton />
             </form>
+            <div className="mt-6 border-t border-slate-200 pt-5">
+              <a
+                href="/templates/template-data-cabang.xlsx"
+                className="text-sm font-semibold text-teal-700 hover:text-teal-800"
+              >
+                Download template Excel
+              </a>
+              <form action={importBranches} className="mt-4 grid gap-4">
+                <FileInput label="File Excel" name="excel_file" accept=".xlsx" />
+                <SubmitButton>Import Excel</SubmitButton>
+              </form>
+            </div>
           </Panel>
         ) : null}
         <Panel title="Daftar Cabang">
