@@ -22,9 +22,13 @@ export async function getSales() {
   return (data ?? []) as unknown as Sales[];
 }
 
-export async function getActiveSales() {
+export async function getActiveSales(profile?: Profile) {
   const sales = await getSales();
-  return sales.filter((item) => item.status === "Aktif");
+  return sales.filter((item) => {
+    if (item.status !== "Aktif") return false;
+    if (profile && !canViewAllBranches(profile)) return item.branch_id === profile.branch_id;
+    return true;
+  });
 }
 
 export async function getCustomers(

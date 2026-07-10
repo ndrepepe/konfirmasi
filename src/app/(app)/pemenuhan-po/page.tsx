@@ -20,7 +20,7 @@ export default async function PemenuhanPoPage({
   const [branches, rows, sales, customers] = await Promise.all([
     getBranches(),
     getReports("pemenuhan_po_reports", profile),
-    getActiveSales(),
+    getActiveSales(profile),
     getActiveCustomers(profile),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
