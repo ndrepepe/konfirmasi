@@ -1,7 +1,8 @@
-import { createSales, importSales } from "@/app/actions/master-data";
+import { createSales } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
+import { SalesExcelImporter } from "@/components/sales-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
-import { FileInput, Input, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
 import { StatusSelect } from "@/components/status-select";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getSales } from "@/lib/data";
@@ -32,18 +33,7 @@ export default async function DataSalesPage() {
             <StatusSelect />
             <SubmitButton />
           </form>
-          <div className="mt-6 border-t border-slate-200 pt-5">
-            <a
-              href="/templates/template-data-sales.xlsx"
-              className="text-sm font-semibold text-teal-700 hover:text-teal-800"
-            >
-              Download template Excel
-            </a>
-            <form action={importSales} className="mt-4 grid gap-4">
-              <FileInput label="File Excel" name="excel_file" accept=".xlsx" />
-              <SubmitButton>Import Excel</SubmitButton>
-            </form>
-          </div>
+          <SalesExcelImporter branches={branches} />
         </Panel>
         <Panel title="Daftar Sales">
           <SearchableTable
