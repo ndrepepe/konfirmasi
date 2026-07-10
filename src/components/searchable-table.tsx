@@ -73,13 +73,13 @@ export function SearchableTable({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Cari data..."
-            className="h-10 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+            className="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
           />
         </label>
         {filterableColumns.length ? (
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {filterableColumns.map((column) => (
-              <div key={column.key} className="min-w-40">
+              <div key={column.key} className="min-w-0 sm:min-w-40">
                 <SearchableSelect
                   label={column.label}
                   required={false}
@@ -112,7 +112,7 @@ export function SearchableTable({
             <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-600">
               <tr>
                 {columns.map((column) => (
-                  <th key={column.key} className="whitespace-nowrap px-4 py-3">
+                  <th key={column.key} className="whitespace-nowrap px-3 py-3 sm:px-4">
                     {column.label}
                   </th>
                 ))}
@@ -126,8 +126,8 @@ export function SearchableTable({
                       key={column.key}
                       className={
                         column.strong
-                          ? "whitespace-nowrap px-4 py-3 font-semibold text-slate-950"
-                          : "whitespace-nowrap px-4 py-3 text-slate-700"
+                          ? "whitespace-nowrap px-3 py-3 font-semibold text-slate-950 sm:px-4"
+                          : "whitespace-nowrap px-3 py-3 text-slate-700 sm:px-4"
                       }
                     >
                       {row.cells[column.key] || "-"}

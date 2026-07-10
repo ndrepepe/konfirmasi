@@ -69,7 +69,7 @@ export function SearchableSelect({
         type="button"
         onClick={() => setOpen((current) => !current)}
         className={clsx(
-          "flex h-10 w-full items-center justify-between gap-3 rounded-md border border-slate-300 bg-white px-3 text-left text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100",
+          "flex h-11 w-full items-center justify-between gap-3 rounded-md border border-slate-300 bg-white px-3 text-left text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm",
           selected ? "text-slate-900" : "text-slate-400",
         )}
       >
@@ -85,15 +85,15 @@ export function SearchableSelect({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Cari..."
-              className="h-9 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              className="h-10 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-9 sm:text-sm"
             />
           </div>
-          <div className="max-h-56 overflow-y-auto p-1">
+          <div className="max-h-[45vh] overflow-y-auto p-1 sm:max-h-56">
             {!required ? (
               <button
                 type="button"
                 onClick={() => choose("")}
-                className="flex w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
               >
                 <span>{placeholder}</span>
                 {!selectedValue ? <Check className="h-4 w-4 text-teal-700" aria-hidden /> : null}
@@ -105,7 +105,7 @@ export function SearchableSelect({
                   key={`${option.value}-${option.label}`}
                   type="button"
                   onClick={() => choose(option.value)}
-                  className="flex w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
                   {option.value === selectedValue ? (

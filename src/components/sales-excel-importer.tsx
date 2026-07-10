@@ -161,12 +161,12 @@ export function SalesExcelImporter({ branches }: { branches: Branch[] }) {
             type="file"
             accept=".xlsx"
             disabled={status === "reading" || status === "uploading"}
-            className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-700 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white disabled:opacity-60"
+            className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-base file:mr-3 file:rounded-md file:border-0 file:bg-teal-700 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white disabled:opacity-60 sm:text-sm"
           />
         </label>
         <button
           disabled={status === "reading" || status === "uploading"}
-          className="h-10 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+          className="h-11 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-400 sm:h-10"
         >
           {status === "reading" || status === "uploading" ? "Memproses..." : "Import Excel"}
         </button>

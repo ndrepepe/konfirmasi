@@ -16,30 +16,32 @@ export function AppShell({
   const items = navItems.filter((item) => canAccessMenu(profile, item.href));
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden lg:grid lg:grid-cols-[280px_1fr]">
+    <div className="flex min-h-screen flex-col lg:grid lg:h-screen lg:grid-cols-[280px_1fr] lg:overflow-hidden">
       <NavPrefetcher hrefs={items.map((item) => item.href)} />
-      <aside className="max-h-[45vh] shrink-0 overflow-y-auto border-b border-slate-200 bg-white lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r">
+      <aside className="shrink-0 border-b border-slate-200 bg-white lg:h-screen lg:border-b-0 lg:border-r">
         <div className="flex min-h-full flex-col">
-          <div className="border-b border-slate-200 px-6 py-5">
+          <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
               Konfirmasi
             </p>
-            <h1 className="mt-1 text-xl font-semibold text-slate-950">Prosedur Cabang</h1>
+            <h1 className="mt-1 text-lg font-semibold text-slate-950 sm:text-xl">
+              Prosedur Cabang
+            </h1>
           </div>
-          <nav className="flex gap-2 overflow-x-auto px-4 py-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pb-3 lg:pt-5">
+          <nav className="flex gap-2 overflow-x-auto px-3 py-3 sm:px-4 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pb-3 lg:pt-5">
             {items.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 prefetch
-                className="flex min-h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
+                className="flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 lg:gap-3"
               >
                 <item.icon className="h-4 w-4 text-teal-700" aria-hidden />
                 {item.label}
               </Link>
             ))}
           </nav>
-          <div className="sticky bottom-0 border-t border-slate-200 bg-white p-4">
+          <div className="hidden border-t border-slate-200 bg-white p-4 sm:block lg:sticky lg:bottom-0">
             <div className="rounded-md bg-slate-50 p-3">
               <p className="text-sm font-semibold text-slate-950">{profile.full_name}</p>
               <p className="mt-1 truncate text-xs text-slate-500">{profile.email}</p>
@@ -53,7 +55,7 @@ export function AppShell({
           </div>
         </div>
       </aside>
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:h-screen lg:px-8">
+      <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-6 lg:h-screen lg:min-h-0 lg:overflow-y-auto lg:px-8">
         {children}
       </main>
     </div>
