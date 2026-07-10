@@ -18,7 +18,7 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-col lg:grid lg:h-screen lg:grid-cols-[280px_1fr] lg:overflow-hidden">
       <NavPrefetcher hrefs={items.map((item) => item.href)} />
-      <aside className="shrink-0 border-b border-slate-200 bg-white lg:h-screen lg:border-b-0 lg:border-r">
+      <aside className="max-h-[45vh] shrink-0 overflow-y-auto border-b border-slate-200 bg-white lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r">
         <div className="flex min-h-full flex-col">
           <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
