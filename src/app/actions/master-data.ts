@@ -7,6 +7,16 @@ import { readExcelRows } from "@/lib/excel-import";
 import { createClient } from "@/lib/supabase/server";
 import { customerDataSchema, salesSchema } from "@/lib/validators";
 
+const importBatchSize = 500;
+
+function chunkRows<T>(rows: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < rows.length; index += size) {
+    chunks.push(rows.slice(index, index + size));
+  }
+  return chunks;
+}
+
 async function requireMasterAccess() {
   const profile = await requireProfile();
   if (profile.role === "admin_cabang") redirect("/dashboard");
@@ -44,10 +54,12 @@ export async function importSales(formData: FormData) {
   if (!parsed.length) throw new Error("Tidak ada data sales yang bisa diimport.");
 
   const supabase = await createClient();
-  const { error } = await supabase.from("data_sales").upsert(parsed, {
-    onConflict: "sales_code",
-  });
-  if (error) throw new Error(error.message);
+  for (const chunk of chunkRows(parsed, importBatchSize)) {
+    const { error } = await supabase.from("data_sales").upsert(chunk, {
+      onConflict: "sales_code",
+    });
+    if (error) throw new Error(error.message);
+  }
 
   revalidatePath("/data-sales");
   redirect("/data-sales?imported=1");
@@ -97,10 +109,12 @@ export async function importCustomerData(formData: FormData) {
     }),
   );
 
-  const { error } = await supabase.from("data_customers").upsert(parsed, {
-    onConflict: "customer_code",
-  });
-  if (error) throw new Error(error.message);
+  for (const chunk of chunkRows(parsed, importBatchSize)) {
+    const { error } = await supabase.from("data_customers").upsert(chunk, {
+      onConflict: "customer_code",
+    });
+    if (error) throw new Error(error.message);
+  }
 
   revalidatePath("/data-customer");
   redirect("/data-customer?imported=1");
