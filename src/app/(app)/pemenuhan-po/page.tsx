@@ -1,17 +1,21 @@
 import { createPemenuhanPo } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
+import { CustomerSelect } from "@/components/customer-select";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
+import { SalesSelect } from "@/components/sales-select";
 import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getBranches, getReports } from "@/lib/data";
+import { getActiveCustomers, getActiveSales, getBranches, getReports } from "@/lib/data";
 
 export default async function PemenuhanPoPage() {
   const profile = await requireProfile();
-  const [branches, rows] = await Promise.all([
+  const [branches, rows, sales, customers] = await Promise.all([
     getBranches(),
     getReports("pemenuhan_po_reports", profile),
+    getActiveSales(),
+    getActiveCustomers(profile),
   ]);
 
   return (
@@ -24,8 +28,8 @@ export default async function PemenuhanPoPage() {
         <Panel title="Form Pemenuhan PO">
           <form action={createPemenuhanPo} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
-            <Input label="Nama Customer" name="customer_name" />
-            <Input label="Nama Sales" name="sales_name" />
+            <CustomerSelect customers={customers} />
+            <SalesSelect label="Nama Sales" name="sales_name" sales={sales} />
             <Input label="Tanggal PO" name="po_date" type="date" />
             <Input label="No PO" name="po_number" />
             <MultiFileInput

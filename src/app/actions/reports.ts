@@ -31,6 +31,18 @@ export async function createCustomerBaru(formData: FormData) {
     "customer-baru",
   );
 
+  const { error: customerError } = await supabase.from("data_customers").upsert(
+    {
+      customer_code: parsed.customer_id,
+      branch_id: parsed.branch_id,
+      customer_name: parsed.customer_new,
+      status: "Aktif",
+    },
+    { onConflict: "customer_code" },
+  );
+
+  if (customerError) throw new Error(customerError.message);
+
   const { error } = await supabase.from("customer_baru_reports").insert({
     ...parsed,
     confirmation_file: confirmation,
@@ -39,6 +51,7 @@ export async function createCustomerBaru(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/customer-baru");
+  revalidatePath("/data-customer");
   redirect("/customer-baru?created=1");
 }
 

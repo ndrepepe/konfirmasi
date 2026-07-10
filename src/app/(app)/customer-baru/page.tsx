@@ -3,15 +3,17 @@ import { BranchSelect } from "@/components/branch-select";
 import { Guard } from "@/components/app-shell";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
+import { SalesSelect } from "@/components/sales-select";
 import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getBranches, getReports } from "@/lib/data";
+import { getActiveSales, getBranches, getReports } from "@/lib/data";
 
 export default async function CustomerBaruPage() {
   const profile = await requireProfile();
-  const [branches, rows] = await Promise.all([
+  const [branches, rows, sales] = await Promise.all([
     getBranches(),
     getReports("customer_baru_reports", profile),
+    getActiveSales(),
   ]);
 
   return (
@@ -25,7 +27,7 @@ export default async function CustomerBaruPage() {
           <form action={createCustomerBaru} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <Input label="Customer Baru" name="customer_new" />
-            <Input label="Sales yg mengajukan" name="sales_requester" />
+            <SalesSelect label="Sales yg mengajukan" name="sales_requester" sales={sales} />
             <Input label="Tanggal Input Bsoft" name="bsoft_input_date" type="date" />
             <Input label="ID Customer" name="customer_id" />
             <Input label="Contact Person" name="contact_person" />

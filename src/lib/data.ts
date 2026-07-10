@@ -1,6 +1,6 @@
 import { canViewAllBranches } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
-import type { Branch, Profile, ReportRow } from "@/lib/types";
+import type { Branch, Customer, Profile, ReportRow, Sales } from "@/lib/types";
 
 export async function getBranches() {
   const supabase = await createClient();
@@ -10,6 +10,42 @@ export async function getBranches() {
     .order("code");
   if (error) throw new Error(error.message);
   return (data ?? []) as Branch[];
+}
+
+export async function getSales() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("data_sales")
+    .select("id, sales_code, sales_name, status")
+    .order("sales_name");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Sales[];
+}
+
+export async function getActiveSales() {
+  const sales = await getSales();
+  return sales.filter((item) => item.status === "Aktif");
+}
+
+export async function getCustomers(profile: Profile) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("data_customers")
+    .select("id, customer_code, branch_id, customer_name, status, branches(id, code, name)")
+    .order("customer_name");
+
+  if (!canViewAllBranches(profile) && profile.branch_id) {
+    query = query.eq("branch_id", profile.branch_id);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Customer[];
+}
+
+export async function getActiveCustomers(profile: Profile) {
+  const customers = await getCustomers(profile);
+  return customers.filter((item) => item.status === "Aktif");
 }
 
 export async function getReports(table: string, profile: Profile) {

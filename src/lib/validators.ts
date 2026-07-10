@@ -13,6 +13,21 @@ export const userSchema = z.object({
   branch_id: z.string().uuid().optional().or(z.literal("")),
 });
 
+export const masterStatusSchema = z.enum(["Aktif", "Nonaktif"]);
+
+export const salesSchema = z.object({
+  sales_code: z.string().min(1, "ID Sales wajib diisi").max(50),
+  sales_name: z.string().min(2, "Nama sales wajib diisi").max(160),
+  status: masterStatusSchema,
+});
+
+export const customerDataSchema = z.object({
+  customer_code: z.string().min(1, "ID Customer wajib diisi").max(80),
+  branch_id: z.string().uuid(),
+  customer_name: z.string().min(2, "Nama customer wajib diisi").max(180),
+  status: masterStatusSchema,
+});
+
 export const customerBaruSchema = z.object({
   branch_id: z.string().uuid(),
   customer_new: z.string().min(2),

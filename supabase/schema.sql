@@ -19,6 +19,23 @@ create table public.profiles (
   constraint admin_cabang_requires_branch check (role <> 'admin_cabang' or branch_id is not null)
 );
 
+create table public.data_sales (
+  id uuid primary key default gen_random_uuid(),
+  sales_code text not null unique,
+  sales_name text not null,
+  status text not null default 'Aktif' check (status in ('Aktif', 'Nonaktif')),
+  created_at timestamptz not null default now()
+);
+
+create table public.data_customers (
+  id uuid primary key default gen_random_uuid(),
+  customer_code text not null unique,
+  branch_id uuid not null references public.branches(id),
+  customer_name text not null,
+  status text not null default 'Aktif' check (status in ('Aktif', 'Nonaktif')),
+  created_at timestamptz not null default now()
+);
+
 create table public.customer_baru_reports (
   id uuid primary key default gen_random_uuid(),
   branch_id uuid not null references public.branches(id),
@@ -58,6 +75,7 @@ create table public.penagihan_reports (
 );
 
 create index profiles_branch_id_idx on public.profiles(branch_id);
+create index data_customers_branch_id_idx on public.data_customers(branch_id);
 create index customer_baru_branch_id_idx on public.customer_baru_reports(branch_id);
 create index pemenuhan_po_branch_id_idx on public.pemenuhan_po_reports(branch_id);
 create index penagihan_branch_id_idx on public.penagihan_reports(branch_id);
@@ -95,6 +113,8 @@ $$;
 
 alter table public.branches enable row level security;
 alter table public.profiles enable row level security;
+alter table public.data_sales enable row level security;
+alter table public.data_customers enable row level security;
 alter table public.customer_baru_reports enable row level security;
 alter table public.pemenuhan_po_reports enable row level security;
 alter table public.penagihan_reports enable row level security;
@@ -120,6 +140,34 @@ on public.profiles for all
 to authenticated
 using (public.current_profile_role() = 'super_user')
 with check (public.current_profile_role() = 'super_user');
+
+create policy "authenticated users can read sales"
+on public.data_sales for select
+to authenticated
+using (true);
+
+create policy "super and accounting can manage sales"
+on public.data_sales for all
+to authenticated
+using (public.current_profile_role() in ('super_user', 'accounting'))
+with check (public.current_profile_role() in ('super_user', 'accounting'));
+
+create policy "allowed users can read customers"
+on public.data_customers for select
+to authenticated
+using (
+  public.current_profile_role() in ('super_user', 'accounting')
+  or (
+    public.current_profile_role() = 'admin_cabang'
+    and public.current_profile_branch_id() = branch_id
+  )
+);
+
+create policy "super and accounting can manage customers"
+on public.data_customers for all
+to authenticated
+using (public.current_profile_role() in ('super_user', 'accounting'))
+with check (public.current_profile_role() in ('super_user', 'accounting'));
 
 create policy "super and accounting can read customer baru"
 on public.customer_baru_reports for select
