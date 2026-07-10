@@ -29,8 +29,16 @@ export function Panel({
       <div className="border-b border-slate-200 px-5 py-4">
         <h3 className="text-sm font-semibold text-slate-950">{title}</h3>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
     </section>
+  );
+}
+
+export function InputDataLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="grid min-h-[calc(100vh-11rem)] grid-rows-[minmax(0,2fr)_minmax(0,3fr)] gap-5">
+      {children}
+    </div>
   );
 }
 

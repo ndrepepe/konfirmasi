@@ -1,7 +1,7 @@
 import { createBranch, importBranches } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
-import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { FileInput, Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 
@@ -15,13 +15,9 @@ export default async function BranchesPage() {
         title="Data Cabang"
         description="Lihat data cabang. Penambahan cabang hanya tersedia untuk super user."
       />
-      <div
-        className={
-          profile.role === "super_user" ? "grid gap-5 xl:grid-cols-[380px_1fr]" : "grid gap-5"
-        }
-      >
+      <InputDataLayout>
         {profile.role === "super_user" ? (
-          <Panel title="Tambah Cabang">
+          <Panel title="Tambah Cabang" className="flex min-h-0 flex-col">
             <form action={createBranch} className="grid gap-4">
               <Input label="Kode Cabang" name="code" />
               <Input label="Nama Cabang" name="name" />
@@ -41,7 +37,14 @@ export default async function BranchesPage() {
             </div>
           </Panel>
         ) : null}
-        <Panel title="Daftar Cabang">
+        <Panel
+          title="Daftar Cabang"
+          className={
+            profile.role === "super_user"
+              ? "flex min-h-0 flex-col"
+              : "row-span-2 flex min-h-0 flex-col"
+          }
+        >
           <SearchableTable
             rows={branches.map((branch) => ({
               id: branch.id,
@@ -57,7 +60,7 @@ export default async function BranchesPage() {
             emptyLabel="Belum ada cabang."
           />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }

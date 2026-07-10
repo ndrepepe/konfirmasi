@@ -4,7 +4,7 @@ import { BranchSelect } from "@/components/branch-select";
 import { CustomerSelect } from "@/components/customer-select";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCustomers, getBranches, getReports } from "@/lib/data";
 
@@ -22,8 +22,8 @@ export default async function PenagihanPage() {
         title="Penagihan"
         description="Catat bukti penagihan untuk customer pada cabang terkait."
       />
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <Panel title="Form Penagihan">
+      <InputDataLayout>
+        <Panel title="Form Penagihan" className="flex min-h-0 flex-col">
           <form action={createPenagihan} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <CustomerSelect customers={customers} />
@@ -35,10 +35,10 @@ export default async function PenagihanPage() {
             <SubmitButton />
           </form>
         </Panel>
-        <Panel title="Data Penagihan">
+        <Panel title="Data Penagihan" className="flex min-h-0 flex-col">
           <ReportTable rows={rows} columns={[{ key: "customer_name", label: "Customer" }]} />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }

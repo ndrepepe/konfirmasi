@@ -4,7 +4,7 @@ import { BranchSelect } from "@/components/branch-select";
 import { CustomerExcelImporter } from "@/components/customer-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
 import { StatusSelect } from "@/components/status-select";
-import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
 import { canViewAllBranches } from "@/lib/permissions";
@@ -36,8 +36,8 @@ export default async function DataCustomerPage({
         title="Data Customer"
         description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
       />
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <Panel title="Tambah Customer">
+      <InputDataLayout>
+        <Panel title="Tambah Customer" className="flex min-h-0 flex-col">
           <form action={createCustomerData} className="grid gap-4">
             <Input label="ID Customer" name="customer_code" />
             <BranchSelect branches={branches} profile={profile} />
@@ -47,7 +47,7 @@ export default async function DataCustomerPage({
           </form>
           <CustomerExcelImporter branches={branches} />
         </Panel>
-        <Panel title="Daftar Customer">
+        <Panel title="Daftar Customer" className="flex min-h-0 flex-col">
           <form className="mb-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[1fr_180px_160px_auto]">
             <label className="grid gap-1 text-xs font-medium text-slate-600">
               Cari
@@ -69,7 +69,7 @@ export default async function DataCustomerPage({
                   <option value="">Semua</option>
                   {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
-                      {branch.code}
+                      {branch.name}
                     </option>
                   ))}
                 </select>
@@ -100,7 +100,7 @@ export default async function DataCustomerPage({
               id: customer.id,
               cells: {
                 customer_code: customer.customer_code,
-                branch: customer.branches?.code ?? "-",
+                branch: customer.branches?.name ?? "-",
                 customer_name: customer.customer_name,
                 status: customer.status,
               },
@@ -114,7 +114,7 @@ export default async function DataCustomerPage({
             emptyLabel="Belum ada data customer."
           />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }

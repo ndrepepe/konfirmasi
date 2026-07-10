@@ -2,7 +2,7 @@ import { createSales } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
 import { SalesExcelImporter } from "@/components/sales-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
-import { Input, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
+import { Input, InputDataLayout, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
 import { StatusSelect } from "@/components/status-select";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getSales } from "@/lib/data";
@@ -17,8 +17,8 @@ export default async function DataSalesPage() {
         title="Data Sales"
         description="Kelola master sales yang digunakan pada Customer Baru dan Pemenuhan PO."
       />
-      <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-        <Panel title="Tambah Sales">
+      <InputDataLayout>
+        <Panel title="Tambah Sales" className="flex min-h-0 flex-col">
           <form action={createSales} className="grid gap-4">
             <Input label="ID Sales" name="sales_code" />
             <Select label="Cabang" name="branch_id">
@@ -35,7 +35,7 @@ export default async function DataSalesPage() {
           </form>
           <SalesExcelImporter branches={branches} />
         </Panel>
-        <Panel title="Daftar Sales">
+        <Panel title="Daftar Sales" className="flex min-h-0 flex-col">
           <SearchableTable
             rows={sales.map((item) => ({
               id: item.id,
@@ -55,7 +55,7 @@ export default async function DataSalesPage() {
             emptyLabel="Belum ada data sales."
           />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }

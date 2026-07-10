@@ -4,7 +4,7 @@ import { Guard } from "@/components/app-shell";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { SalesSelect } from "@/components/sales-select";
-import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getActiveSales, getBranches, getReports } from "@/lib/data";
 
@@ -22,8 +22,8 @@ export default async function CustomerBaruPage() {
         title="Customer Baru"
         description="Input customer baru berikut bukti konfirmasi WhatsApp dan informasi Bsoft."
       />
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <Panel title="Form Customer Baru">
+      <InputDataLayout>
+        <Panel title="Form Customer Baru" className="flex min-h-0 flex-col">
           <form action={createCustomerBaru} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <Input label="Customer Baru" name="customer_new" />
@@ -40,7 +40,7 @@ export default async function CustomerBaruPage() {
             <SubmitButton />
           </form>
         </Panel>
-        <Panel title="Data Customer Baru">
+        <Panel title="Data Customer Baru" className="flex min-h-0 flex-col">
           <ReportTable
             rows={rows}
             columns={[
@@ -53,7 +53,7 @@ export default async function CustomerBaruPage() {
             ]}
           />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }

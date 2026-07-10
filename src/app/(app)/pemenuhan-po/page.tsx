@@ -5,7 +5,7 @@ import { CustomerSelect } from "@/components/customer-select";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { SalesSelect } from "@/components/sales-select";
-import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCustomers, getActiveSales, getBranches, getReports } from "@/lib/data";
 
@@ -24,8 +24,8 @@ export default async function PemenuhanPoPage() {
         title="Pemenuhan PO"
         description="Catat data PO, lampiran PO, dan bukti konfirmasi untuk proses pemenuhan."
       />
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <Panel title="Form Pemenuhan PO">
+      <InputDataLayout>
+        <Panel title="Form Pemenuhan PO" className="flex min-h-0 flex-col">
           <form action={createPemenuhanPo} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <CustomerSelect customers={customers} />
@@ -47,7 +47,7 @@ export default async function PemenuhanPoPage() {
             <SubmitButton />
           </form>
         </Panel>
-        <Panel title="Data Pemenuhan PO">
+        <Panel title="Data Pemenuhan PO" className="flex min-h-0 flex-col">
           <ReportTable
             rows={rows}
             columns={[
@@ -60,7 +60,7 @@ export default async function PemenuhanPoPage() {
             ]}
           />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }

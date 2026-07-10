@@ -1,7 +1,7 @@
 import { createUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
-import { Input, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
+import { Input, InputDataLayout, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 import { roleLabels, roleOptions } from "@/lib/permissions";
@@ -28,8 +28,8 @@ export default async function UsersPage() {
         title="Seting User"
         description="Buat user baru, tentukan role, dan kaitkan admin cabang ke cabang masing-masing."
       />
-      <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
-        <Panel title="Tambah User">
+      <InputDataLayout>
+        <Panel title="Tambah User" className="flex min-h-0 flex-col">
           <form action={createUser} className="grid gap-4">
             <Input label="Nama User" name="full_name" />
             <Input label="Email" name="email" type="email" />
@@ -52,7 +52,7 @@ export default async function UsersPage() {
             <SubmitButton>Buat User</SubmitButton>
           </form>
         </Panel>
-        <Panel title="Daftar User">
+        <Panel title="Daftar User" className="flex min-h-0 flex-col">
           <SearchableTable
             rows={users.map((user) => ({
               id: user.id,
@@ -72,7 +72,7 @@ export default async function UsersPage() {
             emptyLabel="Belum ada user."
           />
         </Panel>
-      </div>
+      </InputDataLayout>
     </Guard>
   );
 }
