@@ -16,17 +16,17 @@ export function AppShell({
   const items = navItems.filter((item) => canAccessMenu(profile, item.href));
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
+    <div className="flex h-screen flex-col overflow-hidden lg:grid lg:grid-cols-[280px_1fr]">
       <NavPrefetcher hrefs={items.map((item) => item.href)} />
-      <aside className="border-b border-slate-200 bg-white lg:min-h-screen lg:border-b-0 lg:border-r">
-        <div className="flex h-full flex-col">
+      <aside className="max-h-[45vh] shrink-0 overflow-y-auto border-b border-slate-200 bg-white lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r">
+        <div className="flex min-h-full flex-col">
           <div className="border-b border-slate-200 px-6 py-5">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">
               Konfirmasi
             </p>
             <h1 className="mt-1 text-xl font-semibold text-slate-950">Prosedur Cabang</h1>
           </div>
-          <nav className="flex gap-2 overflow-x-auto px-4 py-3 lg:flex-col lg:overflow-visible lg:pb-3 lg:pt-5">
+          <nav className="flex gap-2 overflow-x-auto px-4 py-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pb-3 lg:pt-5">
             {items.map((item) => (
               <Link
                 key={item.href}
@@ -53,7 +53,9 @@ export function AppShell({
           </div>
         </div>
       </aside>
-      <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:h-screen lg:px-8">
+        {children}
+      </main>
     </div>
   );
 }
