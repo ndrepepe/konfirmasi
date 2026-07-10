@@ -20,10 +20,12 @@ export function SearchableTable({
   rows,
   columns,
   emptyLabel,
+  showControls = true,
 }: {
   rows: SearchableRow[];
   columns: SearchableColumn[];
   emptyLabel: string;
+  showControls?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -41,6 +43,8 @@ export function SearchableTable({
   );
 
   const filteredRows = useMemo(() => {
+    if (!showControls) return rows;
+
     const normalizedQuery = query.trim().toLowerCase();
 
     return rows.filter((row) => {
@@ -54,7 +58,7 @@ export function SearchableTable({
 
       return matchesQuery && matchesFilters;
     });
-  }, [filters, query, rows]);
+  }, [filters, query, rows, showControls]);
 
   if (!rows.length) {
     return (
@@ -66,44 +70,48 @@ export function SearchableTable({
 
   return (
     <div className="grid gap-3">
-      <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative block min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Cari data..."
-            className="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
-          />
-        </label>
-        {filterableColumns.length ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-            {filterableColumns.map((column) => (
-              <div key={column.key} className="min-w-0 sm:min-w-40">
-                <SearchableSelect
-                  label={column.label}
-                  required={false}
-                  placeholder="Semua"
-                  value={filters[column.key] ?? ""}
-                  onChange={(value) =>
-                    setFilters((current) => ({
-                      ...current,
-                      [column.key]: value,
-                    }))
-                  }
-                  options={filterOptions[column.key].map((option) => ({
-                    value: option,
-                    label: option,
-                  }))}
-                />
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      {showControls ? (
+        <div className="flex flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:flex-row lg:items-center lg:justify-between">
+          <label className="relative block min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Cari data..."
+              className="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
+            />
+          </label>
+          {filterableColumns.length ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {filterableColumns.map((column) => (
+                <div key={column.key} className="min-w-0 sm:min-w-40">
+                  <SearchableSelect
+                    label={column.label}
+                    required={false}
+                    placeholder="Semua"
+                    value={filters[column.key] ?? ""}
+                    onChange={(value) =>
+                      setFilters((current) => ({
+                        ...current,
+                        [column.key]: value,
+                      }))
+                    }
+                    options={filterOptions[column.key].map((option) => ({
+                      value: option,
+                      label: option,
+                    }))}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <p className="text-xs text-slate-500">
-        Menampilkan {filteredRows.length} dari {rows.length} data
+        {showControls
+          ? `Menampilkan ${filteredRows.length} dari ${rows.length} data`
+          : `Menampilkan ${rows.length} data`}
       </p>
 
       {filteredRows.length ? (
