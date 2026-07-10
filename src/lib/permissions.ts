@@ -14,7 +14,7 @@ export const roleOptions: Array<{ value: UserRole; label: string }> = [
 
 export function canAccessMenu(profile: Profile, href: string) {
   if (profile.role === "super_user") return true;
-  if (profile.role === "accounting") return !href.startsWith("/settings");
+  if (profile.role === "accounting") return href !== "/settings/users";
   return href === "/pemenuhan-po" || href === "/dashboard";
 }
 

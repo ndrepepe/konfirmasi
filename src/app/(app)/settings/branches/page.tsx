@@ -12,16 +12,22 @@ export default async function BranchesPage() {
     <Guard profile={profile} href="/settings/branches">
       <PageHeader
         title="Data Cabang"
-        description="Kelola kode dan nama cabang. Menu ini hanya tersedia untuk super user."
+        description="Lihat data cabang. Penambahan cabang hanya tersedia untuk super user."
       />
-      <div className="grid gap-5 xl:grid-cols-[380px_1fr]">
-        <Panel title="Tambah Cabang">
-          <form action={createBranch} className="grid gap-4">
-            <Input label="Kode Cabang" name="code" />
-            <Input label="Nama Cabang" name="name" />
-            <SubmitButton />
-          </form>
-        </Panel>
+      <div
+        className={
+          profile.role === "super_user" ? "grid gap-5 xl:grid-cols-[380px_1fr]" : "grid gap-5"
+        }
+      >
+        {profile.role === "super_user" ? (
+          <Panel title="Tambah Cabang">
+            <form action={createBranch} className="grid gap-4">
+              <Input label="Kode Cabang" name="code" />
+              <Input label="Nama Cabang" name="name" />
+              <SubmitButton />
+            </form>
+          </Panel>
+        ) : null}
         <Panel title="Daftar Cabang">
           {branches.length ? (
             <div className="overflow-x-auto rounded-md border border-slate-200">
