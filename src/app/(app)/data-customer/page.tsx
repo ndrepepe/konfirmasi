@@ -1,9 +1,10 @@
-import { createCustomerData, importCustomerData } from "@/app/actions/master-data";
+import { createCustomerData } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
+import { CustomerExcelImporter } from "@/components/customer-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
 import { StatusSelect } from "@/components/status-select";
-import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
 import { canViewAllBranches } from "@/lib/permissions";
@@ -44,18 +45,7 @@ export default async function DataCustomerPage({
             <StatusSelect />
             <SubmitButton />
           </form>
-          <div className="mt-6 border-t border-slate-200 pt-5">
-            <a
-              href="/templates/template-data-customer.xlsx"
-              className="text-sm font-semibold text-teal-700 hover:text-teal-800"
-            >
-              Download template Excel
-            </a>
-            <form action={importCustomerData} className="mt-4 grid gap-4">
-              <FileInput label="File Excel" name="excel_file" accept=".xlsx" />
-              <SubmitButton>Import Excel</SubmitButton>
-            </form>
-          </div>
+          <CustomerExcelImporter branches={branches} />
         </Panel>
         <Panel title="Daftar Customer">
           <form className="mb-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[1fr_180px_160px_auto]">
