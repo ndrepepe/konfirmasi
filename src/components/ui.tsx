@@ -42,6 +42,10 @@ export function InputDataLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function CompactInputDataLayout({ children }: { children: React.ReactNode }) {
+  return <div className="grid gap-5">{children}</div>;
+}
+
 export function Input({
   label,
   name,

@@ -1,10 +1,15 @@
-import { Select } from "@/components/ui";
+import { SearchableSelect } from "@/components/searchable-select";
 
 export function StatusSelect() {
   return (
-    <Select label="Status" name="status">
-      <option value="Aktif">Aktif</option>
-      <option value="Nonaktif">Nonaktif</option>
-    </Select>
+    <SearchableSelect
+      label="Status"
+      name="status"
+      defaultValue="Aktif"
+      options={[
+        { value: "Aktif", label: "Aktif" },
+        { value: "Nonaktif", label: "Nonaktif" },
+      ]}
+    />
   );
 }

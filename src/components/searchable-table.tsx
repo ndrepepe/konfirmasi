@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { SearchableSelect } from "@/components/searchable-select";
 
 export type SearchableColumn = {
   key: string;
@@ -78,26 +79,24 @@ export function SearchableTable({
         {filterableColumns.length ? (
           <div className="flex flex-col gap-2 sm:flex-row">
             {filterableColumns.map((column) => (
-              <label key={column.key} className="grid gap-1 text-xs font-medium text-slate-600">
-                {column.label}
-                <select
+              <div key={column.key} className="min-w-40">
+                <SearchableSelect
+                  label={column.label}
+                  required={false}
+                  placeholder="Semua"
                   value={filters[column.key] ?? ""}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     setFilters((current) => ({
                       ...current,
-                      [column.key]: event.target.value,
+                      [column.key]: value,
                     }))
                   }
-                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-                >
-                  <option value="">Semua</option>
-                  {filterOptions[column.key].map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  options={filterOptions[column.key].map((option) => ({
+                    value: option,
+                    label: option,
+                  }))}
+                />
+              </div>
             ))}
           </div>
         ) : null}

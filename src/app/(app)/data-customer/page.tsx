@@ -3,8 +3,9 @@ import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerExcelImporter } from "@/components/customer-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
+import { SearchableSelect } from "@/components/searchable-select";
 import { StatusSelect } from "@/components/status-select";
-import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { CompactInputDataLayout, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
 import { canViewAllBranches } from "@/lib/permissions";
@@ -36,7 +37,7 @@ export default async function DataCustomerPage({
         title="Data Customer"
         description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
       />
-      <InputDataLayout>
+      <CompactInputDataLayout>
         <Panel title="Tambah Customer" className="flex min-h-0 flex-col">
           <form action={createCustomerData} className="grid gap-4">
             <Input label="ID Customer" name="customer_code" />
@@ -59,34 +60,30 @@ export default async function DataCustomerPage({
               />
             </label>
             {canViewAllBranches(profile) ? (
-              <label className="grid gap-1 text-xs font-medium text-slate-600">
-                Cabang
-                <select
-                  name="branch_id"
-                  defaultValue={params.branch_id ?? ""}
-                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-                >
-                  <option value="">Semua</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <SearchableSelect
+                label="Cabang"
+                name="branch_id"
+                required={false}
+                defaultValue={params.branch_id ?? ""}
+                placeholder="Semua"
+                options={branches.map((branch) => ({
+                  value: branch.id,
+                  label: branch.name,
+                  searchText: `${branch.code} ${branch.name}`,
+                }))}
+              />
             ) : null}
-            <label className="grid gap-1 text-xs font-medium text-slate-600">
-              Status
-              <select
-                name="status"
-                defaultValue={params.status ?? ""}
-                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
-              >
-                <option value="">Semua</option>
-                <option value="Aktif">Aktif</option>
-                <option value="Nonaktif">Nonaktif</option>
-              </select>
-            </label>
+            <SearchableSelect
+              label="Status"
+              name="status"
+              required={false}
+              defaultValue={params.status ?? ""}
+              placeholder="Semua"
+              options={[
+                { value: "Aktif", label: "Aktif" },
+                { value: "Nonaktif", label: "Nonaktif" },
+              ]}
+            />
             <button className="h-10 self-end rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800">
               Terapkan
             </button>
@@ -114,7 +111,7 @@ export default async function DataCustomerPage({
             emptyLabel="Belum ada data customer."
           />
         </Panel>
-      </InputDataLayout>
+      </CompactInputDataLayout>
     </Guard>
   );
 }

@@ -1,4 +1,4 @@
-import { Select } from "@/components/ui";
+import { SearchableSelect } from "@/components/searchable-select";
 import type { Sales } from "@/lib/types";
 
 export function SalesSelect({
@@ -11,14 +11,19 @@ export function SalesSelect({
   sales: Sales[];
 }) {
   return (
-    <Select label={label} name={name}>
-      <option value="">Pilih sales</option>
-      {sales.map((item) => (
-        <option key={item.id} value={item.sales_name}>
-          {item.sales_code} - {item.sales_name}
-          {item.branches?.name ? ` (${item.branches.name})` : ""}
-        </option>
-      ))}
-    </Select>
+    <SearchableSelect
+      label={label}
+      name={name}
+      placeholder="Pilih sales"
+      options={sales.map((item) => ({
+        value: item.sales_name,
+        label: `${item.sales_code} - ${item.sales_name}${
+          item.branches?.name ? ` (${item.branches.name})` : ""
+        }`,
+        searchText: `${item.sales_code} ${item.sales_name} ${item.branches?.name ?? ""} ${
+          item.branches?.code ?? ""
+        }`,
+      }))}
+    />
   );
 }

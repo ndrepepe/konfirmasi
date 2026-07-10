@@ -1,7 +1,8 @@
 import { createUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
-import { Input, InputDataLayout, PageHeader, Panel, Select, SubmitButton } from "@/components/ui";
+import { SearchableSelect } from "@/components/searchable-select";
+import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 import { roleLabels, roleOptions } from "@/lib/permissions";
@@ -34,21 +35,26 @@ export default async function UsersPage() {
             <Input label="Nama User" name="full_name" />
             <Input label="Email" name="email" type="email" />
             <Input label="Password Awal" name="password" type="password" />
-            <Select label="Role" name="role">
-              {roleOptions.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
-              ))}
-            </Select>
-            <Select label="Cabang" name="branch_id" required={false}>
-              <option value="">Tanpa cabang / semua cabang</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.code} - {branch.name}
-                </option>
-              ))}
-            </Select>
+            <SearchableSelect
+              label="Role"
+              name="role"
+              defaultValue={roleOptions[0]?.value}
+              options={roleOptions.map((role) => ({
+                value: role.value,
+                label: role.label,
+              }))}
+            />
+            <SearchableSelect
+              label="Cabang"
+              name="branch_id"
+              required={false}
+              placeholder="Tanpa cabang / semua cabang"
+              options={branches.map((branch) => ({
+                value: branch.id,
+                label: `${branch.code} - ${branch.name}`,
+                searchText: `${branch.code} ${branch.name}`,
+              }))}
+            />
             <SubmitButton>Buat User</SubmitButton>
           </form>
         </Panel>
