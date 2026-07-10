@@ -25,6 +25,7 @@ export default async function CustomerBaruPage() {
           <form action={createCustomerBaru} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <Input label="Customer Baru" name="customer_new" />
+            <Input label="Sales yg mengajukan" name="sales_requester" />
             <Input label="Tanggal Input Bsoft" name="bsoft_input_date" type="date" />
             <Input label="ID Customer" name="customer_id" />
             <Input label="Contact Person" name="contact_person" />
@@ -42,6 +43,7 @@ export default async function CustomerBaruPage() {
             rows={rows}
             columns={[
               { key: "customer_new", label: "Customer" },
+              { key: "sales_requester", label: "Sales" },
               { key: "bsoft_input_date", label: "Tanggal Bsoft" },
               { key: "customer_id", label: "ID Customer" },
               { key: "contact_person", label: "CP" },

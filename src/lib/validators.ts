@@ -16,6 +16,7 @@ export const userSchema = z.object({
 export const customerBaruSchema = z.object({
   branch_id: z.string().uuid(),
   customer_new: z.string().min(2),
+  sales_requester: z.string().min(2),
   bsoft_input_date: z.string().min(1),
   customer_id: z.string().min(1),
   contact_person: z.string().min(2),
@@ -25,6 +26,7 @@ export const customerBaruSchema = z.object({
 export const pemenuhanPoSchema = z.object({
   branch_id: z.string().uuid(),
   customer_name: z.string().min(2),
+  sales_name: z.string().min(2),
   po_date: z.string().min(1),
   po_number: z.string().min(1),
   contact_person: z.string().min(2),

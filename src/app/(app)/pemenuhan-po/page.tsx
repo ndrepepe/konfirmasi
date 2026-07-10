@@ -25,6 +25,7 @@ export default async function PemenuhanPoPage() {
           <form action={createPemenuhanPo} className="grid gap-4">
             <BranchSelect branches={branches} profile={profile} />
             <Input label="Nama Customer" name="customer_name" />
+            <Input label="Nama Sales" name="sales_name" />
             <Input label="Tanggal PO" name="po_date" type="date" />
             <Input label="No PO" name="po_number" />
             <MultiFileInput
@@ -47,6 +48,7 @@ export default async function PemenuhanPoPage() {
             rows={rows}
             columns={[
               { key: "customer_name", label: "Customer" },
+              { key: "sales_name", label: "Sales" },
               { key: "po_date", label: "Tanggal PO" },
               { key: "po_number", label: "No PO" },
               { key: "contact_person", label: "CP" },
