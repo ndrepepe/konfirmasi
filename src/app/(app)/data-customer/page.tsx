@@ -6,10 +6,28 @@ import { StatusSelect } from "@/components/status-select";
 import { FileInput, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
+import { canViewAllBranches } from "@/lib/permissions";
 
-export default async function DataCustomerPage() {
+export default async function DataCustomerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+    branch_id?: string;
+    status?: string;
+  }>;
+}) {
   const profile = await requireProfile();
-  const [branches, customers] = await Promise.all([getBranches(), getCustomers(profile)]);
+  const params = await searchParams;
+  const [branches, customers] = await Promise.all([
+    getBranches(),
+    getCustomers(profile, {
+      search: params.q,
+      branchId: params.branch_id,
+      status: params.status,
+      limit: 500,
+    }),
+  ]);
 
   return (
     <Guard profile={profile} href="/data-customer">
@@ -40,6 +58,53 @@ export default async function DataCustomerPage() {
           </div>
         </Panel>
         <Panel title="Daftar Customer">
+          <form className="mb-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[1fr_180px_160px_auto]">
+            <label className="grid gap-1 text-xs font-medium text-slate-600">
+              Cari
+              <input
+                name="q"
+                defaultValue={params.q ?? ""}
+                placeholder="ID atau nama customer"
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              />
+            </label>
+            {canViewAllBranches(profile) ? (
+              <label className="grid gap-1 text-xs font-medium text-slate-600">
+                Cabang
+                <select
+                  name="branch_id"
+                  defaultValue={params.branch_id ?? ""}
+                  className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+                >
+                  <option value="">Semua</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.code}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label className="grid gap-1 text-xs font-medium text-slate-600">
+              Status
+              <select
+                name="status"
+                defaultValue={params.status ?? ""}
+                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
+              >
+                <option value="">Semua</option>
+                <option value="Aktif">Aktif</option>
+                <option value="Nonaktif">Nonaktif</option>
+              </select>
+            </label>
+            <button className="h-10 self-end rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800">
+              Terapkan
+            </button>
+          </form>
+          <p className="mb-3 text-xs text-slate-500">
+            Data ditampilkan maksimal 500 baris per filter. Gunakan pencarian/filter untuk data
+            besar.
+          </p>
           <SearchableTable
             rows={customers.map((customer) => ({
               id: customer.id,

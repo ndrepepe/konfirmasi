@@ -7,7 +7,7 @@ import { readExcelRows } from "@/lib/excel-import";
 import { createClient } from "@/lib/supabase/server";
 import { customerDataSchema, salesSchema } from "@/lib/validators";
 
-const importBatchSize = 500;
+const importBatchSize = 2000;
 
 function chunkRows<T>(rows: T[], size: number) {
   const chunks: T[][] = [];

@@ -27,15 +27,40 @@ export async function getActiveSales() {
   return sales.filter((item) => item.status === "Aktif");
 }
 
-export async function getCustomers(profile: Profile) {
+export async function getCustomers(
+  profile: Profile,
+  options: {
+    search?: string;
+    status?: string;
+    branchId?: string;
+    limit?: number;
+  } = {},
+) {
   const supabase = await createClient();
+  const limit = options.limit ?? 500;
   let query = supabase
     .from("data_customers")
     .select("id, customer_code, branch_id, customer_name, status, branches(id, code, name)")
-    .order("customer_name");
+    .order("customer_name")
+    .limit(limit);
 
   if (!canViewAllBranches(profile) && profile.branch_id) {
     query = query.eq("branch_id", profile.branch_id);
+  }
+
+  if (canViewAllBranches(profile) && options.branchId) {
+    query = query.eq("branch_id", options.branchId);
+  }
+
+  if (options.status) {
+    query = query.eq("status", options.status);
+  }
+
+  if (options.search?.trim()) {
+    const search = options.search.trim().replace(/[%_]/g, "");
+    query = query.or(
+      `customer_code.ilike.%${search}%,customer_name.ilike.%${search}%`,
+    );
   }
 
   const { data, error } = await query;
@@ -44,7 +69,7 @@ export async function getCustomers(profile: Profile) {
 }
 
 export async function getActiveCustomers(profile: Profile) {
-  const customers = await getCustomers(profile);
+  const customers = await getCustomers(profile, { status: "Aktif", limit: 1000 });
   return customers.filter((item) => item.status === "Aktif");
 }
 
