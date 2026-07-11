@@ -33,6 +33,8 @@ export type Profile = {
   role: UserRole;
   branch_id: string | null;
   branches?: Branch | null;
+  branch_ids?: string[];
+  assigned_branches?: Branch[];
 };
 
 export type ReportKind = "customer_baru" | "pemenuhan_po" | "penagihan";
