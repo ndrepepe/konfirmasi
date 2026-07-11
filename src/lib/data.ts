@@ -1,4 +1,4 @@
-import { canViewAllBranches } from "@/lib/permissions";
+import { canViewAllBranches, getAssignedBranchIds } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { Branch, Customer, Profile, ReportRow, Sales } from "@/lib/types";
 
@@ -24,9 +24,12 @@ export async function getSales() {
 
 export async function getActiveSales(profile?: Profile) {
   const sales = await getSales();
+  const assignedBranchIds = profile ? getAssignedBranchIds(profile) : [];
   return sales.filter((item) => {
     if (item.status !== "Aktif") return false;
-    if (profile && !canViewAllBranches(profile)) return item.branch_id === profile.branch_id;
+    if (profile && !canViewAllBranches(profile)) {
+      return !!item.branch_id && assignedBranchIds.includes(item.branch_id);
+    }
     return true;
   });
 }
@@ -48,8 +51,10 @@ export async function getCustomers(
     .order("customer_name")
     .limit(limit);
 
-  if (!canViewAllBranches(profile) && profile.branch_id) {
-    query = query.eq("branch_id", profile.branch_id);
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getAssignedBranchIds(profile);
+    if (!branchIds.length) return [];
+    query = query.in("branch_id", branchIds);
   }
 
   if (canViewAllBranches(profile) && options.branchId) {
@@ -85,8 +90,10 @@ export async function getReports(table: string, profile: Profile) {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (!canViewAllBranches(profile) && profile.branch_id) {
-    query = query.eq("branch_id", profile.branch_id);
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getAssignedBranchIds(profile);
+    if (!branchIds.length) return [];
+    query = query.in("branch_id", branchIds);
   }
 
   const { data, error } = await query;
