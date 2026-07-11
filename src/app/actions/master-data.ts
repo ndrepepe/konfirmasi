@@ -27,6 +27,12 @@ async function requireMasterAccess() {
   return profile;
 }
 
+async function requireSuperUser() {
+  const profile = await requireProfile();
+  if (profile.role !== "super_user") redirect("/dashboard");
+  return profile;
+}
+
 export async function createSales(formData: FormData) {
   await requireMasterAccess();
   const parsed = salesSchema.parse(Object.fromEntries(formData));
@@ -51,6 +57,19 @@ export async function updateSales(formData: FormData) {
 
   revalidatePath("/data-sales");
   redirect("/data-sales?updated=1");
+}
+
+export async function deleteSales(formData: FormData) {
+  await requireSuperUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID data sales tidak ditemukan.");
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("data_sales").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/data-sales");
+  redirect("/data-sales?deleted=1");
 }
 
 export async function importSales(formData: FormData) {
@@ -126,6 +145,19 @@ export async function updateCustomerData(formData: FormData) {
 
   revalidatePath("/data-customer");
   redirect("/data-customer?updated=1");
+}
+
+export async function deleteCustomerData(formData: FormData) {
+  await requireSuperUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID data customer tidak ditemukan.");
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("data_customers").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/data-customer");
+  redirect("/data-customer?deleted=1");
 }
 
 export async function importCustomerData(formData: FormData) {
