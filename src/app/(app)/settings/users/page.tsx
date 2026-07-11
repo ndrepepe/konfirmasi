@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createUser, updateUser } from "@/app/actions/settings";
+import { createUser, deleteUser, updateUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
 import { SearchableSelect } from "@/components/searchable-select";
@@ -87,6 +87,7 @@ export default async function UsersPage({
             rows={users.map((user) => ({
               id: user.id,
               editHref: `/settings/users?edit=${user.id}`,
+              deleteLabel: `user ${user.full_name}`,
               cells: {
                 full_name: user.full_name,
                 email: user.email,
@@ -101,6 +102,7 @@ export default async function UsersPage({
               { key: "branch", label: "Cabang", filterable: true },
             ]}
             emptyLabel="Belum ada user."
+            deleteAction={profile.role === "super_user" ? deleteUser : undefined}
           />
         </Panel>
       </InputDataLayout>
