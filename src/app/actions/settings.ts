@@ -20,6 +20,36 @@ async function requireSuperUser() {
   return profile;
 }
 
+function branchIdsFromForm(formData: FormData) {
+  return Array.from(
+    new Set(
+      formData
+        .getAll("branch_ids")
+        .map((value) => String(value))
+        .filter(Boolean),
+    ),
+  );
+}
+
+async function syncUserBranches(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  branchIds: string[],
+) {
+  const { error: deleteError } = await admin.from("profile_branches").delete().eq("profile_id", userId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (!branchIds.length) return;
+
+  const { error: insertError } = await admin.from("profile_branches").insert(
+    branchIds.map((branchId) => ({
+      profile_id: userId,
+      branch_id: branchId,
+    })),
+  );
+  if (insertError) throw new Error(insertError.message);
+}
+
 export async function createBranch(formData: FormData) {
   await requireSuperUser();
   const parsed = branchSchema.parse(Object.fromEntries(formData));
@@ -88,7 +118,9 @@ export async function createUser(formData: FormData) {
   }
 
   const parsed = parsedResult.data;
-  if (parsed.role === "admin_cabang" && !parsed.branch_id) {
+  const branchIds = branchIdsFromForm(formData);
+  const primaryBranchId = branchIds[0] ?? "";
+  if (parsed.role === "admin_cabang" && !primaryBranchId) {
     redirectWithSettingsError("Admin cabang wajib memiliki cabang.");
   }
 
@@ -130,12 +162,13 @@ export async function createUser(formData: FormData) {
         full_name: parsed.full_name,
         email: parsed.email,
         role: parsed.role,
-        branch_id: parsed.branch_id || null,
+        branch_id: primaryBranchId || null,
       },
       { onConflict: "id" },
     );
 
     if (profileError) profileErrorMessage = profileError.message;
+    await syncUserBranches(admin, userId, branchIds);
   } catch (error) {
     profileErrorMessage = error instanceof Error ? error.message : "Gagal membuat user.";
   }
@@ -151,8 +184,10 @@ export async function updateUser(formData: FormData) {
   if (!id) throw new Error("ID user tidak ditemukan.");
   const parsed = userUpdateSchema.parse(Object.fromEntries(formData));
   const admin = createAdminClient();
+  const branchIds = branchIdsFromForm(formData);
+  const primaryBranchId = branchIds[0] ?? "";
 
-  if (parsed.role === "admin_cabang" && !parsed.branch_id) {
+  if (parsed.role === "admin_cabang" && !primaryBranchId) {
     throw new Error("Admin cabang wajib memiliki cabang.");
   }
 
@@ -168,10 +203,11 @@ export async function updateUser(formData: FormData) {
       full_name: parsed.full_name,
       email: parsed.email,
       role: parsed.role,
-      branch_id: parsed.branch_id || null,
+      branch_id: primaryBranchId || null,
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
+  await syncUserBranches(admin, id, branchIds);
   revalidatePath("/settings/users");
   redirect("/settings/users?updated=1");
 }
