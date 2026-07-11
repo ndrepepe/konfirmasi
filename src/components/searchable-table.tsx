@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { DeleteButton } from "@/components/delete-button";
 import { SearchableSelect } from "@/components/searchable-select";
 
 export type SearchableColumn = {
@@ -16,6 +17,7 @@ export type SearchableRow = {
   id: string;
   cells: Record<string, string>;
   editHref?: string;
+  deleteLabel?: string;
 };
 
 export function SearchableTable({
@@ -23,11 +25,13 @@ export function SearchableTable({
   columns,
   emptyLabel,
   showControls = true,
+  deleteAction,
 }: {
   rows: SearchableRow[];
   columns: SearchableColumn[];
   emptyLabel: string;
   showControls?: boolean;
+  deleteAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -126,7 +130,7 @@ export function SearchableTable({
                     {column.label}
                   </th>
                 ))}
-                {rows.some((row) => row.editHref) ? (
+                {rows.some((row) => row.editHref) || deleteAction ? (
                   <th className="whitespace-nowrap px-3 py-3 sm:px-4">Tindakan</th>
                 ) : null}
               </tr>
@@ -146,18 +150,26 @@ export function SearchableTable({
                       {row.cells[column.key] || "-"}
                     </td>
                   ))}
-                  {rows.some((item) => item.editHref) ? (
+                  {rows.some((item) => item.editHref) || deleteAction ? (
                     <td className="whitespace-nowrap px-3 py-3 sm:px-4">
-                      {row.editHref ? (
-                        <Link
-                          href={row.editHref}
-                          className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                          Edit
-                        </Link>
-                      ) : (
-                        "-"
-                      )}
+                      <div className="flex items-center gap-2">
+                        {row.editHref ? (
+                          <Link
+                            href={row.editHref}
+                            className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            Edit
+                          </Link>
+                        ) : null}
+                        {deleteAction ? (
+                          <DeleteButton
+                            id={row.id}
+                            action={deleteAction}
+                            label={row.deleteLabel ?? "data ini"}
+                          />
+                        ) : null}
+                        {!row.editHref && !deleteAction ? "-" : null}
+                      </div>
                     </td>
                   ) : null}
                 </tr>
