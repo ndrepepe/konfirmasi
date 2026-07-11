@@ -5,10 +5,12 @@ export function ReportTable({
   rows,
   columns,
   editHrefBase,
+  deleteAction,
 }: {
   rows: ReportRow[];
   columns: Array<{ key: string; label: string }>;
   editHrefBase?: string;
+  deleteAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const tableColumns: SearchableColumn[] = [
     { key: "branch", label: "Cabang", filterable: true, strong: true },
@@ -20,6 +22,7 @@ export function ReportTable({
   const tableRows = rows.map((row) => ({
     id: row.id,
     editHref: editHrefBase ? `${editHrefBase}?edit=${row.id}` : undefined,
+    deleteLabel: `data ${row.branches?.code ?? "laporan"} ini`,
     cells: {
       branch: row.branches?.code ?? "-",
       ...Object.fromEntries(columns.map((column) => [column.key, String(row[column.key] ?? "-")])),
@@ -29,6 +32,11 @@ export function ReportTable({
   }));
 
   return (
-    <SearchableTable rows={tableRows} columns={tableColumns} emptyLabel="Belum ada data laporan." />
+    <SearchableTable
+      rows={tableRows}
+      columns={tableColumns}
+      emptyLabel="Belum ada data laporan."
+      deleteAction={deleteAction}
+    />
   );
 }
