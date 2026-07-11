@@ -1,4 +1,5 @@
 import { clsx } from "clsx";
+import { SubmitButton } from "@/components/submit-button";
 
 export function PageHeader({
   title,
@@ -126,13 +127,7 @@ export function FileInput({
   );
 }
 
-export function SubmitButton({ children = "Simpan" }: { children?: React.ReactNode }) {
-  return (
-    <button className="h-11 rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 sm:h-10">
-      {children}
-    </button>
-  );
-}
+export { SubmitButton };
 
 export function EmptyState({ label }: { label: string }) {
   return (
