@@ -42,6 +42,18 @@ export async function updateBranch(formData: FormData) {
   redirect("/settings/branches?updated=1");
 }
 
+export async function deleteBranch(formData: FormData) {
+  await requireSuperUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID cabang tidak ditemukan.");
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("branches").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings/branches");
+  redirect("/settings/branches?deleted=1");
+}
+
 export async function importBranches(formData: FormData) {
   await requireSuperUser();
   const rows = await readExcelRows(formData.get("excel_file") as File | null, {
@@ -162,4 +174,20 @@ export async function updateUser(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/settings/users");
   redirect("/settings/users?updated=1");
+}
+
+export async function deleteUser(formData: FormData) {
+  const profile = await requireSuperUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID user tidak ditemukan.");
+  if (id === profile.id) throw new Error("User yang sedang login tidak bisa dihapus.");
+
+  const admin = createAdminClient();
+  const { error: authError } = await admin.auth.admin.deleteUser(id);
+  if (authError) throw new Error(authError.message);
+
+  const { error } = await admin.from("profiles").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/settings/users");
+  redirect("/settings/users?deleted=1");
 }
