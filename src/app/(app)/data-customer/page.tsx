@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { createCustomerData, updateCustomerData } from "@/app/actions/master-data";
+import {
+  createCustomerData,
+  deleteCustomerData,
+  updateCustomerData,
+} from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerExcelImporter } from "@/components/customer-excel-importer";
@@ -109,14 +113,15 @@ export default async function DataCustomerPage({
                 { value: "Nonaktif", label: "Nonaktif" },
               ]}
             />
-            <button className="h-11 self-end rounded-md bg-teal-700 px-4 text-sm font-semibold text-white transition hover:bg-teal-800 sm:h-10">
+            <SubmitButton className="self-end" pendingText="Menerapkan...">
               Terapkan
-            </button>
+            </SubmitButton>
           </form>
           <SearchableTable
             rows={customers.map((customer) => ({
               id: customer.id,
               editHref: editHrefFor(customer.id),
+              deleteLabel: `customer ${customer.customer_name}`,
               cells: {
                 customer_code: customer.customer_code,
                 branch: customer.branches?.name ?? "-",
@@ -132,6 +137,7 @@ export default async function DataCustomerPage({
             ]}
             emptyLabel="Belum ada data customer."
             showControls={false}
+            deleteAction={profile.role === "super_user" ? deleteCustomerData : undefined}
           />
         </Panel>
       </CompactInputDataLayout>
