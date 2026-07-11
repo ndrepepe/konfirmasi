@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { signIn } from "@/app/actions/auth";
+import { SubmitButton } from "@/components/submit-button";
 import { getCurrentProfile } from "@/lib/auth";
 
 export default async function LoginPage({
@@ -45,9 +46,9 @@ export default async function LoginPage({
               className="h-11 rounded-md border border-slate-300 px-3 outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-100"
             />
           </label>
-          <button className="mt-2 h-11 rounded-md bg-teal-700 text-sm font-semibold text-white hover:bg-teal-800">
+          <SubmitButton className="mt-2" pendingText="Masuk...">
             Masuk
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </main>
