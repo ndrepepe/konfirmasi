@@ -31,6 +31,10 @@ function branchIdsFromForm(formData: FormData) {
   );
 }
 
+function isMissingProfileBranchesError(message: string) {
+  return message.includes("profile_branches") || message.toLowerCase().includes("relation");
+}
+
 async function syncUserBranches(
   admin: ReturnType<typeof createAdminClient>,
   userId: string,
@@ -38,8 +42,9 @@ async function syncUserBranches(
 ) {
   const { error: deleteError } = await admin.from("profile_branches").delete().eq("profile_id", userId);
   if (deleteError) {
+    if (isMissingProfileBranchesError(deleteError.message) && branchIds.length <= 1) return;
     throw new Error(
-      deleteError.message.includes("profile_branches")
+      isMissingProfileBranchesError(deleteError.message)
         ? "Tabel akses cabang belum tersedia. Jalankan SQL migrasi profile_branches di Supabase."
         : deleteError.message,
     );
@@ -54,8 +59,9 @@ async function syncUserBranches(
     })),
   );
   if (insertError) {
+    if (isMissingProfileBranchesError(insertError.message) && branchIds.length <= 1) return;
     throw new Error(
-      insertError.message.includes("profile_branches")
+      isMissingProfileBranchesError(insertError.message)
         ? "Tabel akses cabang belum tersedia. Jalankan SQL migrasi profile_branches di Supabase."
         : insertError.message,
     );
@@ -193,33 +199,50 @@ export async function createUser(formData: FormData) {
 export async function updateUser(formData: FormData) {
   await requireSuperUser();
   const id = String(formData.get("id") ?? "");
-  if (!id) throw new Error("ID user tidak ditemukan.");
-  const parsed = userUpdateSchema.parse(Object.fromEntries(formData));
-  const admin = createAdminClient();
+  if (!id) redirectWithSettingsError("ID user tidak ditemukan.");
+  const parsedResult = userUpdateSchema.safeParse(Object.fromEntries(formData));
+  if (!parsedResult.success) {
+    redirectWithSettingsError(parsedResult.error.issues[0]?.message ?? "Data user tidak valid.");
+  }
+
+  const parsed = parsedResult.data;
   const branchIds = branchIdsFromForm(formData);
   const primaryBranchId = branchIds[0] ?? "";
 
   if (parsed.role === "admin_cabang" && !primaryBranchId) {
-    throw new Error("Admin cabang wajib memiliki cabang.");
+    redirectWithSettingsError("Admin cabang wajib memiliki cabang.");
   }
 
-  const { error: authError } = await admin.auth.admin.updateUserById(id, {
-    email: parsed.email,
-    user_metadata: { full_name: parsed.full_name },
-  });
-  if (authError) throw new Error(authError.message);
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (error) {
+    redirectWithSettingsError(error instanceof Error ? error.message : "Gagal update user.");
+  }
 
-  const { error } = await admin
-    .from("profiles")
-    .update({
-      full_name: parsed.full_name,
+  try {
+    const { error: authError } = await admin.auth.admin.updateUserById(id, {
       email: parsed.email,
-      role: parsed.role,
-      branch_id: primaryBranchId || null,
-    })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-  await syncUserBranches(admin, id, branchIds);
+      user_metadata: { full_name: parsed.full_name },
+    });
+    if (authError) throw new Error(authError.message);
+
+    const { error } = await admin
+      .from("profiles")
+      .update({
+        full_name: parsed.full_name,
+        email: parsed.email,
+        role: parsed.role,
+        branch_id: primaryBranchId || null,
+      })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+
+    await syncUserBranches(admin, id, branchIds);
+  } catch (error) {
+    redirectWithSettingsError(error instanceof Error ? error.message : "Gagal update user.");
+  }
+
   revalidatePath("/settings/users");
   redirect("/settings/users?updated=1");
 }
