@@ -25,3 +25,17 @@ export function canManageSettings(profile: Profile) {
 export function canViewAllBranches(profile: Profile) {
   return profile.role === "super_user" || profile.role === "accounting";
 }
+
+export function getAssignedBranchIds(profile: Profile) {
+  if (canViewAllBranches(profile)) return [];
+  const branchIds = profile.branch_ids?.length
+    ? profile.branch_ids
+    : profile.branch_id
+      ? [profile.branch_id]
+      : [];
+  return Array.from(new Set(branchIds));
+}
+
+export function canAccessBranch(profile: Profile, branchId: string) {
+  return canViewAllBranches(profile) || getAssignedBranchIds(profile).includes(branchId);
+}
