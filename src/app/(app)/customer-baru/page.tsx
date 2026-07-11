@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createCustomerBaru, updateCustomerBaru } from "@/app/actions/reports";
+import { createCustomerBaru, deleteCustomerBaru, updateCustomerBaru } from "@/app/actions/reports";
 import { BranchSelect } from "@/components/branch-select";
 import { Guard } from "@/components/app-shell";
 import { MultiFileInput } from "@/components/multi-file-input";
@@ -73,6 +73,7 @@ export default async function CustomerBaruPage({
           <ReportTable
             rows={rows}
             editHrefBase="/customer-baru"
+            deleteAction={profile.role === "super_user" ? deleteCustomerBaru : undefined}
             columns={[
               { key: "customer_new", label: "Customer" },
               { key: "sales_requester", label: "Sales" },
