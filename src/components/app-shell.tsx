@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
+import { NavLink } from "@/components/nav-link";
 import { NavPrefetcher } from "@/components/nav-prefetcher";
+import { SubmitButton } from "@/components/submit-button";
 import { navItems } from "@/lib/nav";
 import { canAccessMenu, roleLabels } from "@/lib/permissions";
 import type { Profile } from "@/lib/types";
@@ -14,10 +15,11 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const items = navItems.filter((item) => canAccessMenu(profile, item.href));
+  const hrefs = items.map((item) => item.href);
 
   return (
     <div className="flex min-h-screen flex-col lg:grid lg:h-screen lg:grid-cols-[280px_1fr] lg:overflow-hidden">
-      <NavPrefetcher hrefs={items.map((item) => item.href)} />
+      <NavPrefetcher hrefs={hrefs} />
       <aside className="max-h-[45vh] shrink-0 overflow-y-auto border-b border-slate-200 bg-white lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r">
         <div className="flex min-h-full flex-col">
           <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
@@ -30,15 +32,10 @@ export function AppShell({
           </div>
           <nav className="flex gap-2 overflow-x-auto px-3 py-3 sm:px-4 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pb-3 lg:pt-5">
             {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                prefetch
-                className="flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 hover:text-slate-950 lg:gap-3"
-              >
+              <NavLink key={item.href} href={item.href}>
                 <item.icon className="h-4 w-4 text-teal-700" aria-hidden />
                 {item.label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
           <div className="hidden border-t border-slate-200 bg-white p-4 sm:block lg:sticky lg:bottom-0">
@@ -48,9 +45,12 @@ export function AppShell({
               <p className="mt-2 text-xs font-medium text-teal-700">{roleLabels[profile.role]}</p>
             </div>
             <form action={signOut} className="mt-3">
-              <button className="h-10 w-full rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50">
+              <SubmitButton
+                className="h-10 w-full border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:bg-slate-100"
+                pendingText="Keluar..."
+              >
                 Keluar
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>
