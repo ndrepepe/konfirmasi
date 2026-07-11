@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
-import { canViewAllBranches } from "@/lib/permissions";
+import { canAccessBranch, canViewAllBranches, getAssignedBranchIds } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { uploadAttachments } from "@/lib/storage";
@@ -12,10 +12,6 @@ import {
   pemenuhanPoSchema,
   penagihanSchema,
 } from "@/lib/validators";
-
-function allowedBranch(profileBranchId: string | null, requestedBranchId: string, canAll: boolean) {
-  return canAll || (!!profileBranchId && profileBranchId === requestedBranchId);
-}
 
 function filesFromForm(formData: FormData, name: string) {
   return formData.getAll(name).filter((value): value is File => value instanceof File);
@@ -115,7 +111,7 @@ export async function deleteCustomerBaru(formData: FormData) {
 export async function createPemenuhanPo(formData: FormData) {
   const profile = await requireProfile();
   const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
-  if (!allowedBranch(profile.branch_id, parsed.branch_id, canViewAllBranches(profile))) {
+  if (!canAccessBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa input data cabang sendiri.");
   }
 
@@ -143,7 +139,7 @@ export async function updatePemenuhanPo(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("ID laporan pemenuhan PO tidak ditemukan.");
   const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
-  if (!allowedBranch(profile.branch_id, parsed.branch_id, canViewAllBranches(profile))) {
+  if (!canAccessBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa edit data cabang sendiri.");
   }
 
@@ -158,8 +154,10 @@ export async function updatePemenuhanPo(formData: FormData) {
   if (confirmation.length) updatePayload.confirmation_file = confirmation;
 
   let query = admin.from("pemenuhan_po_reports").update(updatePayload).eq("id", id);
-  if (!canViewAllBranches(profile) && profile.branch_id) {
-    query = query.eq("branch_id", profile.branch_id);
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getAssignedBranchIds(profile);
+    if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
+    query = query.in("branch_id", branchIds);
   }
   const { error } = await query;
   if (error) throw new Error(error.message);
