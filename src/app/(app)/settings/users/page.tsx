@@ -9,26 +9,39 @@ import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 import { roleLabels, roleOptions } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile } from "@/lib/types";
+import type { Branch, Profile } from "@/lib/types";
+
+function normalizeBranch(value: Branch | Branch[] | null | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
 
 async function getUsers() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select(
-      "id, full_name, email, role, branch_id, branches(id, code, name), profile_branches(branch_id, branches(id, code, name))",
-    )
+    .select("id, full_name, email, role, branch_id, branches(id, code, name)")
     .order("full_name");
   if (error) throw new Error(error.message);
-  return (data ?? []).map((user) => {
-    const profile = user as unknown as Profile & {
-      profile_branches?: Array<{ branch_id: string; branches: Profile["branches"] }>;
-    };
 
-    const branchIds = profile.profile_branches?.map((item) => item.branch_id) ?? [];
+  const { data: profileBranches } = await supabase
+    .from("profile_branches")
+    .select("profile_id, branch_id, branches(id, code, name)");
+
+  const branchMap = new Map<string, Array<{ branch_id: string; branches: Profile["branches"] }>>();
+  (profileBranches ?? []).forEach((item) => {
+    const existing = branchMap.get(item.profile_id) ?? [];
+    existing.push({ branch_id: item.branch_id, branches: normalizeBranch(item.branches) });
+    branchMap.set(item.profile_id, existing);
+  });
+
+  return (data ?? []).map((user) => {
+    const profile = user as unknown as Profile;
+    const userBranches = branchMap.get(profile.id) ?? [];
+
+    const branchIds = userBranches.map((item) => item.branch_id);
 
     const assignedBranches =
-      profile.profile_branches
+      userBranches
         ?.map((item) => item.branches)
         .filter((branch): branch is NonNullable<Profile["branches"]> => Boolean(branch)) ?? [];
 
