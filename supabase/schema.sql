@@ -19,6 +19,13 @@ create table public.profiles (
   constraint admin_cabang_requires_branch check (role <> 'admin_cabang' or branch_id is not null)
 );
 
+create table public.profile_branches (
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  branch_id uuid not null references public.branches(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (profile_id, branch_id)
+);
+
 create table public.data_sales (
   id uuid primary key default gen_random_uuid(),
   sales_code text not null unique,
@@ -76,6 +83,7 @@ create table public.penagihan_reports (
 );
 
 create index profiles_branch_id_idx on public.profiles(branch_id);
+create index profile_branches_branch_id_idx on public.profile_branches(branch_id);
 create index data_sales_branch_id_idx on public.data_sales(branch_id);
 create index data_customers_branch_id_idx on public.data_customers(branch_id);
 create index customer_baru_branch_id_idx on public.customer_baru_reports(branch_id);
@@ -102,6 +110,25 @@ as $$
   select branch_id from public.profiles where id = auth.uid()
 $$;
 
+create or replace function public.current_profile_branch_ids()
+returns uuid[]
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce(array_agg(branch_id), '{}'::uuid[])
+  from (
+    select branch_id
+    from public.profiles
+    where id = auth.uid() and branch_id is not null
+    union
+    select branch_id
+    from public.profile_branches
+    where profile_id = auth.uid()
+  ) assigned
+$$;
+
 create or replace function public.can_view_branch(target_branch_id uuid)
 returns boolean
 language sql
@@ -110,11 +137,12 @@ set search_path = public
 stable
 as $$
   select public.current_profile_role() in ('super_user', 'accounting')
-    or public.current_profile_branch_id() = target_branch_id
+    or target_branch_id = any(public.current_profile_branch_ids())
 $$;
 
 alter table public.branches enable row level security;
 alter table public.profiles enable row level security;
+alter table public.profile_branches enable row level security;
 alter table public.data_sales enable row level security;
 alter table public.data_customers enable row level security;
 alter table public.customer_baru_reports enable row level security;
@@ -143,6 +171,17 @@ to authenticated
 using (public.current_profile_role() = 'super_user')
 with check (public.current_profile_role() = 'super_user');
 
+create policy "users can read assigned profile branches"
+on public.profile_branches for select
+to authenticated
+using (profile_id = auth.uid() or public.current_profile_role() = 'super_user');
+
+create policy "super users can manage profile branches"
+on public.profile_branches for all
+to authenticated
+using (public.current_profile_role() = 'super_user')
+with check (public.current_profile_role() = 'super_user');
+
 create policy "authenticated users can read sales"
 on public.data_sales for select
 to authenticated
@@ -157,13 +196,7 @@ with check (public.current_profile_role() in ('super_user', 'accounting'));
 create policy "allowed users can read customers"
 on public.data_customers for select
 to authenticated
-using (
-  public.current_profile_role() in ('super_user', 'accounting')
-  or (
-    public.current_profile_role() = 'admin_cabang'
-    and public.current_profile_branch_id() = branch_id
-  )
-);
+using (public.can_view_branch(branch_id));
 
 create policy "super and accounting can manage customers"
 on public.data_customers for all
@@ -187,26 +220,14 @@ with check (
 create policy "allowed users can read pemenuhan po"
 on public.pemenuhan_po_reports for select
 to authenticated
-using (
-  public.current_profile_role() in ('super_user', 'accounting')
-  or (
-    public.current_profile_role() = 'admin_cabang'
-    and public.current_profile_branch_id() = branch_id
-  )
-);
+using (public.can_view_branch(branch_id));
 
 create policy "allowed users can insert pemenuhan po"
 on public.pemenuhan_po_reports for insert
 to authenticated
 with check (
   created_by = auth.uid()
-  and (
-    public.current_profile_role() in ('super_user', 'accounting')
-    or (
-      public.current_profile_role() = 'admin_cabang'
-      and public.current_profile_branch_id() = branch_id
-    )
-  )
+  and public.can_view_branch(branch_id)
 );
 
 create policy "super and accounting can read penagihan"
