@@ -37,7 +37,13 @@ async function syncUserBranches(
   branchIds: string[],
 ) {
   const { error: deleteError } = await admin.from("profile_branches").delete().eq("profile_id", userId);
-  if (deleteError) throw new Error(deleteError.message);
+  if (deleteError) {
+    throw new Error(
+      deleteError.message.includes("profile_branches")
+        ? "Tabel akses cabang belum tersedia. Jalankan SQL migrasi profile_branches di Supabase."
+        : deleteError.message,
+    );
+  }
 
   if (!branchIds.length) return;
 
@@ -47,7 +53,13 @@ async function syncUserBranches(
       branch_id: branchId,
     })),
   );
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) {
+    throw new Error(
+      insertError.message.includes("profile_branches")
+        ? "Tabel akses cabang belum tersedia. Jalankan SQL migrasi profile_branches di Supabase."
+        : insertError.message,
+    );
+  }
 }
 
 export async function createBranch(formData: FormData) {
