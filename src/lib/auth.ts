@@ -3,39 +3,94 @@ import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile } from "@/lib/types";
+import type { Branch, Profile } from "@/lib/types";
+
+type ProfileRow = Omit<Profile, "branches" | "branch_ids" | "assigned_branches">;
+
+async function readProfileRow(
+  client: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>,
+  userId: string,
+) {
+  const { data, error } = await client
+    .from("profiles")
+    .select("id, full_name, email, role, branch_id")
+    .eq("id", userId)
+    .single();
+
+  if (error || !data) return null;
+  return data as ProfileRow;
+}
+
+async function readProfileBranchIds(
+  client: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>,
+  userId: string,
+) {
+  const { data, error } = await client
+    .from("profile_branches")
+    .select("branch_id")
+    .eq("profile_id", userId);
+
+  if (error) return [];
+  return (data ?? []).map((item) => item.branch_id).filter(Boolean);
+}
+
+async function readBranch(
+  client: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>,
+  branchId: string | null,
+) {
+  if (!branchId) return null;
+  const { data, error } = await client
+    .from("branches")
+    .select("id, code, name")
+    .eq("id", branchId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as Branch;
+}
 
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   if (!isSupabaseConfigured()) return null;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) return null;
+    if (!user) return null;
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("profiles")
-    .select("id, full_name, email, role, branch_id, branches(id, code, name)")
-    .eq("id", user.id)
-    .single();
+    let dataClient: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient> =
+      supabase;
+    try {
+      dataClient = createAdminClient();
+    } catch {
+      dataClient = supabase;
+    }
 
-  if (error || !data) return null;
-  const profile = data as unknown as Profile;
-  const { data: profileBranches } = await admin
-    .from("profile_branches")
-    .select("branch_id")
-    .eq("profile_id", user.id);
+    let profile = await readProfileRow(dataClient, user.id);
+    if (!profile && dataClient !== supabase) {
+      profile = await readProfileRow(supabase, user.id);
+    }
+    if (!profile) return null;
 
-  const branchIds = profileBranches?.map((item) => item.branch_id) ?? [];
+    const branchIds = await readProfileBranchIds(dataClient, user.id);
+    const assignedBranchIds = branchIds.length
+      ? branchIds
+      : profile.branch_id
+        ? [profile.branch_id]
+        : [];
+    const primaryBranch = await readBranch(dataClient, profile.branch_id);
 
-  return {
-    ...profile,
-    branch_ids: branchIds.length ? branchIds : profile.branch_id ? [profile.branch_id] : [],
-    assigned_branches: profile.branches ? [profile.branches] : [],
-  };
+    return {
+      ...profile,
+      branches: primaryBranch,
+      branch_ids: assignedBranchIds,
+      assigned_branches: primaryBranch ? [primaryBranch] : [],
+    };
+  } catch {
+    return null;
+  }
 });
 
 export async function requireProfile() {
