@@ -1,23 +1,28 @@
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { canViewAllBranches, roleLabels } from "@/lib/permissions";
+import { canViewAllBranches, getAssignedBranchIds, roleLabels } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 
-async function countRows(table: string, branchId: string | null, all: boolean) {
+async function countRows(table: string, branchIds: string[], all: boolean) {
   const supabase = await createClient();
   let query = supabase.from(table).select("id", { count: "exact", head: true });
-  if (!all && branchId) query = query.eq("branch_id", branchId);
-  const { count } = await query;
+  if (!all) {
+    if (!branchIds.length) return 0;
+    query = query.in("branch_id", branchIds);
+  }
+  const { count, error } = await query;
+  if (error) return 0;
   return count ?? 0;
 }
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
   const all = canViewAllBranches(profile);
+  const branchIds = all ? [] : getAssignedBranchIds(profile);
   const [customers, pos, billings] = await Promise.all([
-    profile.role === "admin_cabang" ? 0 : countRows("customer_baru_reports", profile.branch_id, all),
-    countRows("pemenuhan_po_reports", profile.branch_id, all),
-    profile.role === "admin_cabang" ? 0 : countRows("penagihan_reports", profile.branch_id, all),
+    profile.role === "admin_cabang" ? 0 : countRows("customer_baru_reports", branchIds, all),
+    countRows("pemenuhan_po_reports", branchIds, all),
+    profile.role === "admin_cabang" ? 0 : countRows("penagihan_reports", branchIds, all),
   ]);
 
   return (
