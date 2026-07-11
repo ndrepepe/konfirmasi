@@ -21,6 +21,24 @@ function filesFromForm(formData: FormData, name: string) {
   return formData.getAll(name).filter((value): value is File => value instanceof File);
 }
 
+async function requireSuperUser() {
+  const profile = await requireProfile();
+  if (profile.role !== "super_user") redirect("/dashboard");
+  return profile;
+}
+
+async function deleteReportRow(formData: FormData, table: string, path: string) {
+  await requireSuperUser();
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("ID data tidak ditemukan.");
+
+  const admin = createAdminClient();
+  const { error } = await admin.from(table).delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath(path);
+  redirect(`${path}?deleted=1`);
+}
+
 export async function createCustomerBaru(formData: FormData) {
   const profile = await requireProfile();
   if (profile.role === "admin_cabang") redirect("/dashboard");
@@ -90,6 +108,10 @@ export async function updateCustomerBaru(formData: FormData) {
   redirect("/customer-baru?updated=1");
 }
 
+export async function deleteCustomerBaru(formData: FormData) {
+  await deleteReportRow(formData, "customer_baru_reports", "/customer-baru");
+}
+
 export async function createPemenuhanPo(formData: FormData) {
   const profile = await requireProfile();
   const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
@@ -145,6 +167,10 @@ export async function updatePemenuhanPo(formData: FormData) {
   redirect("/pemenuhan-po?updated=1");
 }
 
+export async function deletePemenuhanPo(formData: FormData) {
+  await deleteReportRow(formData, "pemenuhan_po_reports", "/pemenuhan-po");
+}
+
 export async function createPenagihan(formData: FormData) {
   const profile = await requireProfile();
   if (profile.role === "admin_cabang") redirect("/dashboard");
@@ -180,4 +206,8 @@ export async function updatePenagihan(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/penagihan");
   redirect("/penagihan?updated=1");
+}
+
+export async function deletePenagihan(formData: FormData) {
+  await deleteReportRow(formData, "penagihan_reports", "/penagihan");
 }
