@@ -15,8 +15,13 @@ export async function signIn(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const supabase = await createClient();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Gagal login.";
+    redirect(`/login?error=${encodeURIComponent(message)}`);
+  }
 
   redirect("/dashboard");
 }
