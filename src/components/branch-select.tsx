@@ -1,5 +1,5 @@
 import { SearchableSelect } from "@/components/searchable-select";
-import { canViewAllBranches } from "@/lib/permissions";
+import { canViewAllBranches, getAssignedBranchIds } from "@/lib/permissions";
 import type { Branch, Profile } from "@/lib/types";
 
 export function BranchSelect({
@@ -11,9 +11,10 @@ export function BranchSelect({
   profile: Profile;
   defaultValue?: string;
 }) {
+  const assignedBranchIds = getAssignedBranchIds(profile);
   const options = canViewAllBranches(profile)
     ? branches
-    : branches.filter((branch) => branch.id === profile.branch_id);
+    : branches.filter((branch) => assignedBranchIds.includes(branch.id));
 
   return (
     <SearchableSelect
