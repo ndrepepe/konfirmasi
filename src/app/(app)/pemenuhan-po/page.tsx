@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createPemenuhanPo, updatePemenuhanPo } from "@/app/actions/reports";
+import { createPemenuhanPo, deletePemenuhanPo, updatePemenuhanPo } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerSelect } from "@/components/customer-select";
@@ -81,6 +81,7 @@ export default async function PemenuhanPoPage({
           <ReportTable
             rows={rows}
             editHrefBase="/pemenuhan-po"
+            deleteAction={profile.role === "super_user" ? deletePemenuhanPo : undefined}
             columns={[
               { key: "customer_name", label: "Customer" },
               { key: "sales_name", label: "Sales" },
