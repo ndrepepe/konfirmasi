@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createSales, updateSales } from "@/app/actions/master-data";
+import { createSales, deleteSales, updateSales } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
 import { SalesExcelImporter } from "@/components/sales-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
@@ -68,6 +68,7 @@ export default async function DataSalesPage({
             rows={sales.map((item) => ({
               id: item.id,
               editHref: `/data-sales?edit=${item.id}`,
+              deleteLabel: `sales ${item.sales_name}`,
               cells: {
                 sales_code: item.sales_code,
                 branch: item.branches?.name ?? "-",
@@ -82,6 +83,7 @@ export default async function DataSalesPage({
               { key: "status", label: "Status", filterable: true },
             ]}
             emptyLabel="Belum ada data sales."
+            deleteAction={profile.role === "super_user" ? deleteSales : undefined}
           />
         </Panel>
       </CompactInputDataLayout>
