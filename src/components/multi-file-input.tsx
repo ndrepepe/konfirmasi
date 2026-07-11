@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { X } from "lucide-react";
+import { useRef, useState } from "react";
 
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxImageSize = 1600;
@@ -62,12 +63,32 @@ export function MultiFileInput({
   accept: string;
   required?: boolean;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const selectedFilesRef = useRef<File[]>([]);
+
+  function syncInputFiles(input: HTMLInputElement, files: File[]) {
+    const transfer = new DataTransfer();
+    files.forEach((file) => transfer.items.add(file));
+    input.files = transfer.files;
+    selectedFilesRef.current = files;
+    setSelectedFiles(files);
+  }
+
+  function removeFile(indexToRemove: number) {
+    const input = inputRef.current;
+    if (!input) return;
+    const nextFiles = selectedFilesRef.current.filter((_, index) => index !== indexToRemove);
+    syncInputFiles(input, nextFiles);
+    setStatus(nextFiles.length ? `${nextFiles.length} file siap.` : "");
+  }
 
   return (
     <label className="grid gap-1.5 text-sm font-medium text-slate-700">
       {label}
       <input
+        ref={inputRef}
         name={name}
         type="file"
         accept={accept}
@@ -77,15 +98,17 @@ export function MultiFileInput({
           const input = event.currentTarget;
           const files = Array.from(input.files ?? []);
           if (!files.length) {
-            setStatus("");
+            syncInputFiles(input, selectedFilesRef.current);
+            setStatus(
+              selectedFilesRef.current.length ? `${selectedFilesRef.current.length} file siap.` : "",
+            );
             return;
           }
 
           setStatus("Mengompresi file...");
           const compressed = await Promise.all(files.map(compressImage));
-          const transfer = new DataTransfer();
-          compressed.forEach((file) => transfer.items.add(file));
-          input.files = transfer.files;
+          const nextFiles = [...selectedFilesRef.current, ...compressed];
+          syncInputFiles(input, nextFiles);
           const saved = files.reduce(
             (total, file, index) => total + Math.max(0, file.size - compressed[index].size),
             0,
@@ -93,13 +116,37 @@ export function MultiFileInput({
           const savedMb = saved / 1024 / 1024;
           setStatus(
             saved > 0
-              ? `${compressed.length} file siap, hemat ${savedMb.toFixed(2)} MB.`
-              : `${compressed.length} file siap.`,
+              ? `${nextFiles.length} file siap, hemat ${savedMb.toFixed(2)} MB dari pilihan terakhir.`
+              : `${nextFiles.length} file siap.`,
           );
         }}
         className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-700 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
       />
       {status ? <span className="text-xs font-normal text-slate-500">{status}</span> : null}
+      {selectedFiles.length ? (
+        <ul className="grid gap-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-normal text-slate-600">
+          {selectedFiles.map((file, index) => (
+            <li
+              key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
+              className="flex min-w-0 items-center justify-between gap-2"
+            >
+              <span className="truncate">{file.name}</span>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  removeFile(index);
+                }}
+                className="grid size-6 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                aria-label={`Hapus ${file.name}`}
+                title={`Hapus ${file.name}`}
+              >
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </label>
   );
 }
