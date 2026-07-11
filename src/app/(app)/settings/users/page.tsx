@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createUser, deleteUser, updateUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
+import { MultiBranchSelect } from "@/components/multi-branch-select";
 import { SearchableTable } from "@/components/searchable-table";
 import { SearchableSelect } from "@/components/searchable-select";
 import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
@@ -14,10 +15,33 @@ async function getUsers() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, branch_id, branches(id, code, name)")
+    .select(
+      "id, full_name, email, role, branch_id, branches(id, code, name), profile_branches(branch_id, branches(id, code, name))",
+    )
     .order("full_name");
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Profile[];
+  return (data ?? []).map((user) => {
+    const profile = user as unknown as Profile & {
+      profile_branches?: Array<{ branch_id: string; branches: Profile["branches"] }>;
+    };
+
+    const branchIds = profile.profile_branches?.map((item) => item.branch_id) ?? [];
+
+    const assignedBranches =
+      profile.profile_branches
+        ?.map((item) => item.branches)
+        .filter((branch): branch is NonNullable<Profile["branches"]> => Boolean(branch)) ?? [];
+
+    return {
+      ...profile,
+      branch_ids: branchIds.length ? branchIds : profile.branch_id ? [profile.branch_id] : [],
+      assigned_branches: assignedBranches.length
+        ? assignedBranches
+        : profile.branches
+          ? [profile.branches]
+          : [],
+    };
+  });
 }
 
 export default async function UsersPage({
@@ -57,18 +81,7 @@ export default async function UsersPage({
                 label: role.label,
               }))}
             />
-            <SearchableSelect
-              label="Cabang"
-              name="branch_id"
-              required={false}
-              placeholder="Tanpa cabang / semua cabang"
-              defaultValue={editingUser?.branch_id ?? ""}
-              options={branches.map((branch) => ({
-                value: branch.id,
-                label: `${branch.code} - ${branch.name}`,
-                searchText: `${branch.code} ${branch.name}`,
-              }))}
-            />
+            <MultiBranchSelect branches={branches} defaultValues={editingUser?.branch_ids ?? []} />
             <div className="flex flex-col gap-2 sm:flex-row">
               <SubmitButton>{editingUser ? "Update User" : "Buat User"}</SubmitButton>
               {editingUser ? (
@@ -92,7 +105,9 @@ export default async function UsersPage({
                 full_name: user.full_name,
                 email: user.email,
                 role: roleLabels[user.role],
-                branch: user.branches?.name ?? "Semua cabang",
+                branch: user.assigned_branches?.length
+                  ? user.assigned_branches.map((branch) => branch.name).join(", ")
+                  : "Semua cabang",
               },
             }))}
             columns={[
