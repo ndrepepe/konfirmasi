@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createBranch, importBranches, updateBranch } from "@/app/actions/settings";
+import { createBranch, deleteBranch, importBranches, updateBranch } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { SearchableTable } from "@/components/searchable-table";
 import {
@@ -67,6 +67,7 @@ export default async function BranchesPage({
             rows={branches.map((branch) => ({
               id: branch.id,
               editHref: profile.role === "super_user" ? `/settings/branches?edit=${branch.id}` : undefined,
+              deleteLabel: `cabang ${branch.name}`,
               cells: {
                 code: branch.code,
                 name: branch.name,
@@ -77,6 +78,7 @@ export default async function BranchesPage({
               { key: "name", label: "Nama Cabang" },
             ]}
             emptyLabel="Belum ada cabang."
+            deleteAction={profile.role === "super_user" ? deleteBranch : undefined}
           />
         </Panel>
       </CompactInputDataLayout>
