@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createPenagihan, updatePenagihan } from "@/app/actions/reports";
+import { createPenagihan, deletePenagihan, updatePenagihan } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerSelect } from "@/components/customer-select";
@@ -58,6 +58,7 @@ export default async function PenagihanPage({
           <ReportTable
             rows={rows}
             editHrefBase="/penagihan"
+            deleteAction={profile.role === "super_user" ? deletePenagihan : undefined}
             columns={[{ key: "customer_name", label: "Customer" }]}
           />
         </Panel>
