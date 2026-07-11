@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 
 export function NavPrefetcher({ hrefs }: { hrefs: string[] }) {
   const router = useRouter();
+  const hrefKey = hrefs.join("|");
 
   useEffect(() => {
-    hrefs.forEach((href) => router.prefetch(href));
-  }, [hrefs, router]);
+    hrefKey.split("|").forEach((href) => {
+      if (href) router.prefetch(href);
+    });
+  }, [hrefKey, router]);
 
   return null;
 }
