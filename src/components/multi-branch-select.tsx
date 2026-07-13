@@ -15,7 +15,7 @@ export function MultiBranchSelect({
   const [selectedValues, setSelectedValues] = useState(defaultValues);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const wrapperRef = useRef<HTMLLabelElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
 
   const filteredBranches = useMemo(() => {
@@ -42,7 +42,7 @@ export function MultiBranchSelect({
   }
 
   return (
-    <label
+    <div
       ref={wrapperRef}
       className="relative grid gap-1.5 text-sm font-medium text-slate-700"
       onBlur={(event) => {
@@ -52,7 +52,7 @@ export function MultiBranchSelect({
         }
       }}
     >
-      Cabang
+      <span>Cabang</span>
       {selectedValues.map((value) => (
         <input key={value} name="branch_ids" value={value} readOnly hidden />
       ))}
@@ -111,7 +111,10 @@ export function MultiBranchSelect({
                 <button
                   key={branch.id}
                   type="button"
-                  onClick={() => toggleBranch(branch.id)}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    toggleBranch(branch.id);
+                  }}
                   className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
                 >
                   <span className="min-w-0 truncate">
@@ -128,6 +131,6 @@ export function MultiBranchSelect({
           </div>
         </div>
       ) : null}
-    </label>
+    </div>
   );
 }
