@@ -19,7 +19,7 @@ export default async function PemenuhanPoPage({
   const params = await searchParams;
   const [branches, rows, sales, customers] = await Promise.all([
     getBranches(),
-    getReports("pemenuhan_po_reports", profile),
+    getReports("pemenuhan_po_reports", profile, { limitAccountingToConfiguredBranches: true }),
     getActiveSales(profile),
     getActiveCustomers(profile),
   ]);

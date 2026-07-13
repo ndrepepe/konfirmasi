@@ -27,7 +27,7 @@ export function ReportTable({
     viewHref: viewHrefBase ? `${viewHrefBase}/${row.id}` : undefined,
     deleteLabel: `data ${row.branches?.code ?? "laporan"} ini`,
     cells: {
-      branch: row.branches?.code ?? "-",
+      branch: row.branches?.name ?? row.branches?.code ?? "-",
       ...Object.fromEntries(columns.map((column) => [column.key, String(row[column.key] ?? "-")])),
       created_by_name: row.profiles?.full_name ?? "-",
       created_at_label: new Date(row.created_at).toLocaleString("id-ID"),

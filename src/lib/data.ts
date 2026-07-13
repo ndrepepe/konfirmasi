@@ -1,4 +1,5 @@
-import { canViewAllBranches, getAssignedBranchIds } from "@/lib/permissions";
+import { canViewAllBranches, getAssignedBranchIds, getConfiguredBranchIds } from "@/lib/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Branch, Customer, Profile, ReportRow, Sales } from "@/lib/types";
 
@@ -82,7 +83,11 @@ export async function getActiveCustomers(profile: Profile) {
   return customers.filter((item) => item.status === "Aktif");
 }
 
-export async function getReports(table: string, profile: Profile) {
+export async function getReports(
+  table: string,
+  profile: Profile,
+  options: { limitAccountingToConfiguredBranches?: boolean } = {},
+) {
   const supabase = await createClient();
   let query = supabase
     .from(table)
@@ -96,7 +101,40 @@ export async function getReports(table: string, profile: Profile) {
     query = query.in("branch_id", branchIds);
   }
 
+  if (profile.role === "accounting" && options.limitAccountingToConfiguredBranches) {
+    const branchIds = getConfiguredBranchIds(profile);
+    if (!branchIds.length) return [];
+    query = query.in("branch_id", branchIds);
+  }
+
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data ?? []) as ReportRow[];
+  const rows = (data ?? []) as ReportRow[];
+  const missingCreatorIds = Array.from(
+    new Set(rows.filter((row) => !row.profiles?.full_name).map((row) => row.created_by).filter(Boolean)),
+  );
+
+  if (!missingCreatorIds.length) return rows;
+
+  try {
+    const admin = createAdminClient();
+    const { data: creators, error: creatorError } = await admin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", missingCreatorIds);
+    if (creatorError) throw creatorError;
+
+    const creatorMap = new Map(
+      (creators ?? []).map((creator) => [
+        creator.id,
+        { full_name: creator.full_name, email: creator.email },
+      ]),
+    );
+    return rows.map((row) => ({
+      ...row,
+      profiles: row.profiles?.full_name ? row.profiles : creatorMap.get(row.created_by) ?? row.profiles,
+    })) as ReportRow[];
+  } catch {
+    return rows;
+  }
 }
