@@ -6,7 +6,7 @@ import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getBranches, getCustomers, getReports } from "@/lib/data";
+import { getBranches, getReports } from "@/lib/data";
 import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function PenagihanPage({
@@ -16,10 +16,9 @@ export default async function PenagihanPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
-  const [branches, rows, customers] = await Promise.all([
+  const [branches, rows] = await Promise.all([
     getBranches(),
     getReports("penagihan_reports", profile),
-    getCustomers(profile, { limit: 50000 }),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
   const configuredBranchIds = getConfiguredBranchIds(profile);
@@ -40,9 +39,9 @@ export default async function PenagihanPage({
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
             <BranchScopedCustomerSelect
               branches={inputBranches}
-              customers={customers}
               defaultBranchId={editingRow?.branch_id}
               defaultCustomerName={String(editingRow?.customer_name ?? "")}
+              loadCustomersByBranch
             />
             <MultiFileInput
               label="Bukti"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { SearchableSelect } from "@/components/searchable-select";
 import type { Branch, Customer, Sales } from "@/lib/types";
@@ -73,27 +73,74 @@ export function BranchScopedSalesSelect({
 
 export function BranchScopedCustomerSelect({
   branches,
-  customers,
+  customers = [],
   defaultBranchId = "",
   defaultCustomerName = "",
+  loadCustomersByBranch = false,
 }: {
   branches: Branch[];
-  customers: Customer[];
+  customers?: Customer[];
   defaultBranchId?: string;
   defaultCustomerName?: string;
+  loadCustomersByBranch?: boolean;
 }) {
   const [branchId, setBranchId] = useState(defaultBranchId);
   const [customerName, setCustomerName] = useState(defaultCustomerName);
+  const [loadedCustomers, setLoadedCustomers] = useState<Customer[]>([]);
+  const availableCustomers = loadCustomersByBranch ? loadedCustomers : customers;
   const filteredCustomers = useMemo(
-    () => (branchId ? customers.filter((customer) => customer.branch_id === branchId) : customers),
-    [branchId, customers],
+    () => {
+      if (loadCustomersByBranch && !branchId) return [];
+      return branchId
+        ? availableCustomers.filter((customer) => customer.branch_id === branchId)
+        : availableCustomers;
+    },
+    [availableCustomers, branchId, loadCustomersByBranch],
   );
+  const customerOptions = useMemo(() => {
+    const options = filteredCustomers.map((customer) => ({
+      value: customer.customer_name,
+      label: `${customer.customer_code} - ${customer.customer_name}${
+        customer.branches?.name ? ` (${customer.branches.name})` : ""
+      }`,
+      searchText: `${customer.customer_code} ${customer.customer_name} ${
+        customer.branches?.name ?? ""
+      } ${customer.branches?.code ?? ""}`,
+    }));
+
+    if (customerName && !options.some((option) => option.value === customerName)) {
+      options.unshift({ value: customerName, label: customerName, searchText: customerName });
+    }
+
+    return options;
+  }, [customerName, filteredCustomers]);
+
+  useEffect(() => {
+    if (!loadCustomersByBranch) return;
+
+    if (!branchId) return;
+
+    const controller = new AbortController();
+    fetch(`/api/customers?branch_id=${encodeURIComponent(branchId)}`, {
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Gagal mengambil data customer.");
+        return response.json() as Promise<{ customers: Customer[] }>;
+      })
+      .then((payload) => setLoadedCustomers(payload.customers))
+      .catch((error) => {
+        if (error.name !== "AbortError") setLoadedCustomers([]);
+      });
+
+    return () => controller.abort();
+  }, [branchId, customers, loadCustomersByBranch]);
 
   function changeBranch(value: string) {
     setBranchId(value);
     if (
       customerName &&
-      !customers.some((customer) => customer.branch_id === value && customer.customer_name === customerName)
+      !availableCustomers.some((customer) => customer.branch_id === value && customer.customer_name === customerName)
     ) {
       setCustomerName("");
     }
@@ -115,15 +162,7 @@ export function BranchScopedCustomerSelect({
         placeholder="Pilih customer"
         value={customerName}
         onChange={setCustomerName}
-        options={filteredCustomers.map((customer) => ({
-          value: customer.customer_name,
-          label: `${customer.customer_code} - ${customer.customer_name}${
-            customer.branches?.name ? ` (${customer.branches.name})` : ""
-          }`,
-          searchText: `${customer.customer_code} ${customer.customer_name} ${
-            customer.branches?.name ?? ""
-          } ${customer.branches?.code ?? ""}`,
-        }))}
+        options={customerOptions}
       />
     </>
   );
