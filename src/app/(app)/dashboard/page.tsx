@@ -1,6 +1,7 @@
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { canViewAllBranches, getAssignedBranchIds, roleLabels } from "@/lib/permissions";
+import { getConfiguredBranchIds, roleLabels } from "@/lib/permissions";
+import { getBranches } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 
 async function countRows(table: string, branchIds: string[], all: boolean) {
@@ -17,13 +18,20 @@ async function countRows(table: string, branchIds: string[], all: boolean) {
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
-  const all = canViewAllBranches(profile);
-  const branchIds = all ? [] : getAssignedBranchIds(profile);
-  const [customers, pos, billings] = await Promise.all([
+  const all = profile.role === "super_user";
+  const branchIds = all ? [] : getConfiguredBranchIds(profile);
+  const [branches, customers, pos, billings] = await Promise.all([
+    getBranches(),
     profile.role === "admin_cabang" ? 0 : countRows("customer_baru_reports", branchIds, all),
     countRows("pemenuhan_po_reports", branchIds, all),
     profile.role === "admin_cabang" ? 0 : countRows("penagihan_reports", branchIds, all),
   ]);
+  const branchLabel = all
+    ? "Semua cabang"
+    : branches
+        .filter((branch) => branchIds.includes(branch.id))
+        .map((branch) => branch.name)
+        .join(", ") || "-";
 
   return (
     <>
@@ -58,7 +66,7 @@ export default async function DashboardPage() {
           <div>
             <dt className="font-medium text-slate-500">Cabang</dt>
             <dd className="mt-1 font-semibold text-slate-950">
-              {profile.branches?.name ?? "Semua cabang"}
+              {branchLabel}
             </dd>
           </div>
         </dl>
