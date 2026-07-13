@@ -1,4 +1,5 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const allowedTypes = new Set([
   "image/jpeg",
@@ -66,4 +67,37 @@ export async function uploadAttachments(files: File[], folder: string) {
   );
 
   return uploaded.filter(Boolean);
+}
+
+export type StoredAttachment = {
+  key: string;
+  name: string;
+  type?: string;
+  size?: number;
+};
+
+export async function getAttachmentUrl(key: string) {
+  const bucket = process.env.BACKBLAZE_BUCKET;
+  if (!bucket) throw new Error("BACKBLAZE_BUCKET belum dikonfigurasi.");
+
+  return getSignedUrl(
+    getS3Client(),
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+    }),
+    { expiresIn: 60 * 10 },
+  );
+}
+
+export async function getAttachmentLinks(value: unknown) {
+  const files = Array.isArray(value) ? (value as StoredAttachment[]) : [];
+  return Promise.all(
+    files
+      .filter((file) => file?.key)
+      .map(async (file) => ({
+        ...file,
+        url: await getAttachmentUrl(file.key),
+      })),
+  );
 }

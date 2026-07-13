@@ -17,6 +17,7 @@ export type SearchableRow = {
   id: string;
   cells: Record<string, string>;
   editHref?: string;
+  viewHref?: string;
   deleteLabel?: string;
 };
 
@@ -130,7 +131,7 @@ export function SearchableTable({
                     {column.label}
                   </th>
                 ))}
-                {rows.some((row) => row.editHref) || deleteAction ? (
+                {rows.some((row) => row.editHref || row.viewHref) || deleteAction ? (
                   <th className="whitespace-nowrap px-3 py-3 sm:px-4">Tindakan</th>
                 ) : null}
               </tr>
@@ -150,9 +151,17 @@ export function SearchableTable({
                       {row.cells[column.key] || "-"}
                     </td>
                   ))}
-                  {rows.some((item) => item.editHref) || deleteAction ? (
+                  {rows.some((item) => item.editHref || item.viewHref) || deleteAction ? (
                     <td className="whitespace-nowrap px-3 py-3 sm:px-4">
                       <div className="flex items-center gap-2">
+                        {row.viewHref ? (
+                          <Link
+                            href={row.viewHref}
+                            className="inline-flex h-9 items-center rounded-md border border-teal-200 bg-white px-3 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+                          >
+                            Lihat Data
+                          </Link>
+                        ) : null}
                         {row.editHref ? (
                           <Link
                             href={row.editHref}
@@ -168,7 +177,7 @@ export function SearchableTable({
                             label={row.deleteLabel ?? "data ini"}
                           />
                         ) : null}
-                        {!row.editHref && !deleteAction ? "-" : null}
+                        {!row.editHref && !row.viewHref && !deleteAction ? "-" : null}
                       </div>
                     </td>
                   ) : null}

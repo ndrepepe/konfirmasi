@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/config";
+import { requireProfile } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signIn(formData: FormData) {
@@ -30,4 +32,38 @@ export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+function redirectWithPasswordMessage(type: "error" | "success", message: string): never {
+  const params = new URLSearchParams({ [type]: message });
+  redirect(`/change-password?${params.toString()}`);
+}
+
+export async function changePassword(formData: FormData) {
+  const profile = await requireProfile();
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+  const requestedUserId = String(formData.get("user_id") ?? "");
+
+  if (password.length < 8) {
+    redirectWithPasswordMessage("error", "Password minimal 8 karakter.");
+  }
+
+  if (password !== confirmPassword) {
+    redirectWithPasswordMessage("error", "Konfirmasi password tidak sama.");
+  }
+
+  if (profile.role === "super_user") {
+    const targetUserId = requestedUserId || profile.id;
+    const admin = createAdminClient();
+    const { error } = await admin.auth.admin.updateUserById(targetUserId, { password });
+    if (error) redirectWithPasswordMessage("error", error.message);
+    redirectWithPasswordMessage("success", "Password user berhasil diubah.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) redirectWithPasswordMessage("error", error.message);
+
+  redirectWithPasswordMessage("success", "Password berhasil diubah.");
 }

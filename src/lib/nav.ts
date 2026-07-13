@@ -2,6 +2,7 @@ import {
   Building2,
   FileCheck2,
   FileText,
+  KeyRound,
   LayoutDashboard,
   ReceiptText,
   UserRound,
@@ -16,5 +17,6 @@ export const navItems = [
   { href: "/data-sales", label: "Data Sales", icon: UserRound },
   { href: "/data-customer", label: "Data Customer", icon: FileText },
   { href: "/settings/branches", label: "Data Cabang", icon: Building2 },
+  { href: "/change-password", label: "Ubah Password", icon: KeyRound },
   { href: "/settings/users", label: "Seting User", icon: Users },
 ] as const;

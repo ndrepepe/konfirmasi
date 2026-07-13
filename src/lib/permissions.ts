@@ -13,8 +13,11 @@ export const roleOptions: Array<{ value: UserRole; label: string }> = [
 ];
 
 export function canAccessMenu(profile: Profile, href: string) {
+  if (href === "/change-password") return true;
   if (profile.role === "super_user") return true;
-  if (profile.role === "accounting") return href !== "/settings/users";
+  if (profile.role === "accounting") {
+    return href !== "/settings/users" && href !== "/settings/branches";
+  }
   return href === "/pemenuhan-po" || href === "/dashboard";
 }
 

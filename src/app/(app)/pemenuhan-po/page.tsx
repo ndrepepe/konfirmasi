@@ -80,7 +80,8 @@ export default async function PemenuhanPoPage({
         <Panel title="Data Pemenuhan PO" className="flex min-h-0 flex-col">
           <ReportTable
             rows={rows}
-            editHrefBase="/pemenuhan-po"
+            editHrefBase={profile.role === "accounting" ? undefined : "/pemenuhan-po"}
+            viewHrefBase={profile.role === "accounting" ? "/pemenuhan-po" : undefined}
             deleteAction={profile.role === "super_user" ? deletePemenuhanPo : undefined}
             columns={[
               { key: "customer_name", label: "Customer" },
