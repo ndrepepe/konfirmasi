@@ -80,11 +80,28 @@ export default async function UsersPage({
               {params.error}
             </div>
           ) : null}
-          <form action={editingUser ? updateUser : createUser} className="grid gap-4">
+          <form
+            action={editingUser ? updateUser : createUser}
+            autoComplete="off"
+            className="grid gap-4"
+          >
             {editingUser ? <input type="hidden" name="id" value={editingUser.id} /> : null}
             <Input label="Nama User" name="full_name" defaultValue={editingUser?.full_name} />
-            <Input label="Email" name="email" type="email" defaultValue={editingUser?.email} />
-            {!editingUser ? <Input label="Password Awal" name="password" type="password" /> : null}
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              defaultValue={editingUser?.email}
+              autoComplete={editingUser ? "email" : "off"}
+            />
+            {!editingUser ? (
+              <Input
+                label="Password Awal"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+              />
+            ) : null}
             <SearchableSelect
               label="Role"
               name="role"

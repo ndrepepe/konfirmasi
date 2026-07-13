@@ -53,12 +53,14 @@ export function Input({
   type = "text",
   required = true,
   defaultValue,
+  autoComplete,
 }: {
   label: string;
   name: string;
   type?: string;
   required?: boolean;
   defaultValue?: string;
+  autoComplete?: string;
 }) {
   return (
     <label className="grid gap-1.5 text-sm font-medium text-slate-700">
@@ -68,6 +70,7 @@ export function Input({
         type={type}
         required={required}
         defaultValue={defaultValue}
+        autoComplete={autoComplete}
         className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
       />
     </label>
