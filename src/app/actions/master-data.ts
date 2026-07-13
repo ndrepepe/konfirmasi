@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { readExcelRows } from "@/lib/excel-import";
+import { canUseConfiguredBranch } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { customerDataSchema, salesSchema } from "@/lib/validators";
 
@@ -34,8 +35,11 @@ async function requireSuperUser() {
 }
 
 export async function createSales(formData: FormData) {
-  await requireMasterAccess();
+  const profile = await requireMasterAccess();
   const parsed = salesSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa input data cabang yang diset untuk user Anda.");
+  }
   const supabase = await createClient();
 
   const { error } = await supabase.from("data_sales").insert(parsed);
@@ -46,10 +50,13 @@ export async function createSales(formData: FormData) {
 }
 
 export async function updateSales(formData: FormData) {
-  await requireMasterAccess();
+  const profile = await requireMasterAccess();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("ID data sales tidak ditemukan.");
   const parsed = salesSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
+  }
   const supabase = await createClient();
 
   const { error } = await supabase.from("data_sales").update(parsed).eq("id", id);
@@ -122,8 +129,11 @@ export async function importSales(formData: FormData) {
 }
 
 export async function createCustomerData(formData: FormData) {
-  await requireMasterAccess();
+  const profile = await requireMasterAccess();
   const parsed = customerDataSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa input data cabang yang diset untuk user Anda.");
+  }
   const supabase = await createClient();
 
   const { error } = await supabase.from("data_customers").insert(parsed);
@@ -134,10 +144,13 @@ export async function createCustomerData(formData: FormData) {
 }
 
 export async function updateCustomerData(formData: FormData) {
-  await requireMasterAccess();
+  const profile = await requireMasterAccess();
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("ID data customer tidak ditemukan.");
   const parsed = customerDataSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
+  }
   const supabase = await createClient();
 
   const { error } = await supabase.from("data_customers").update(parsed).eq("id", id);

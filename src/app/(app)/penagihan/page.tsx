@@ -33,7 +33,12 @@ export default async function PenagihanPage({
         <Panel title={editingRow ? "Edit Penagihan" : "Form Penagihan"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updatePenagihan : createPenagihan} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
-            <BranchSelect branches={branches} profile={profile} defaultValue={editingRow?.branch_id} />
+            <BranchSelect
+              branches={branches}
+              profile={profile}
+              defaultValue={editingRow?.branch_id}
+              limitToAssigned={profile.role === "accounting"}
+            />
             <CustomerSelect customers={customers} defaultValue={String(editingRow?.customer_name ?? "")} />
             <MultiFileInput
               label="Bukti"

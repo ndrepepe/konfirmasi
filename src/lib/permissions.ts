@@ -29,8 +29,7 @@ export function canViewAllBranches(profile: Profile) {
   return profile.role === "super_user" || profile.role === "accounting";
 }
 
-export function getAssignedBranchIds(profile: Profile) {
-  if (canViewAllBranches(profile)) return [];
+export function getConfiguredBranchIds(profile: Profile) {
   const branchIds = profile.branch_ids?.length
     ? profile.branch_ids
     : profile.branch_id
@@ -39,6 +38,15 @@ export function getAssignedBranchIds(profile: Profile) {
   return Array.from(new Set(branchIds));
 }
 
+export function getAssignedBranchIds(profile: Profile) {
+  if (canViewAllBranches(profile)) return [];
+  return getConfiguredBranchIds(profile);
+}
+
 export function canAccessBranch(profile: Profile, branchId: string) {
   return canViewAllBranches(profile) || getAssignedBranchIds(profile).includes(branchId);
+}
+
+export function canUseConfiguredBranch(profile: Profile, branchId: string) {
+  return profile.role !== "accounting" || getConfiguredBranchIds(profile).includes(branchId);
 }

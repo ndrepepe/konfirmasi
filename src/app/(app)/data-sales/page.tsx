@@ -14,6 +14,7 @@ import { SearchableSelect } from "@/components/searchable-select";
 import { StatusSelect } from "@/components/status-select";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getSales } from "@/lib/data";
+import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function DataSalesPage({
   searchParams,
@@ -24,6 +25,11 @@ export default async function DataSalesPage({
   const params = await searchParams;
   const [branches, sales] = await Promise.all([getBranches(), getSales()]);
   const editingSales = sales.find((item) => item.id === params.edit);
+  const configuredBranchIds = getConfiguredBranchIds(profile);
+  const inputBranches =
+    profile.role === "accounting"
+      ? branches.filter((branch) => configuredBranchIds.includes(branch.id))
+      : branches;
 
   return (
     <Guard profile={profile} href="/data-sales">
@@ -41,7 +47,7 @@ export default async function DataSalesPage({
               name="branch_id"
               placeholder="Pilih cabang"
               defaultValue={editingSales?.branch_id ?? ""}
-              options={branches.map((branch) => ({
+              options={inputBranches.map((branch) => ({
                 value: branch.id,
                 label: `${branch.code} - ${branch.name}`,
                 searchText: `${branch.code} ${branch.name}`,

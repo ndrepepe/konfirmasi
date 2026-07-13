@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
-import { canAccessBranch, canViewAllBranches, getAssignedBranchIds } from "@/lib/permissions";
+import {
+  canAccessBranch,
+  canUseConfiguredBranch,
+  canViewAllBranches,
+  getAssignedBranchIds,
+} from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { uploadAttachments } from "@/lib/storage";
@@ -40,6 +45,9 @@ export async function createCustomerBaru(formData: FormData) {
   if (profile.role === "admin_cabang") redirect("/dashboard");
 
   const parsed = customerBaruSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa input data cabang yang diset untuk user Anda.");
+  }
   const supabase = await createClient();
   const confirmation = await uploadAttachments(
     filesFromForm(formData, "confirmation_file"),
@@ -77,6 +85,9 @@ export async function updateCustomerBaru(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("ID laporan customer baru tidak ditemukan.");
   const parsed = customerBaruSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
+  }
   const admin = createAdminClient();
   const confirmation = await uploadAttachments(
     filesFromForm(formData, "confirmation_file"),
@@ -114,6 +125,9 @@ export async function createPemenuhanPo(formData: FormData) {
   if (!canAccessBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa input data cabang sendiri.");
   }
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa input data cabang yang diset untuk user Anda.");
+  }
 
   const supabase = await createClient();
   const poFile = await uploadAttachments(filesFromForm(formData, "po_file"), "pemenuhan-po/po");
@@ -141,6 +155,9 @@ export async function updatePemenuhanPo(formData: FormData) {
   const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
   if (!canAccessBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa edit data cabang sendiri.");
+  }
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
   }
 
   const admin = createAdminClient();
@@ -174,6 +191,9 @@ export async function createPenagihan(formData: FormData) {
   if (profile.role === "admin_cabang") redirect("/dashboard");
 
   const parsed = penagihanSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa input data cabang yang diset untuk user Anda.");
+  }
   const supabase = await createClient();
   const proof = await uploadAttachments(filesFromForm(formData, "proof_file"), "penagihan");
 
@@ -195,6 +215,9 @@ export async function updatePenagihan(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("ID laporan penagihan tidak ditemukan.");
   const parsed = penagihanSchema.parse(Object.fromEntries(formData));
+  if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
+    throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
+  }
   const admin = createAdminClient();
   const proof = await uploadAttachments(filesFromForm(formData, "proof_file"), "penagihan");
   const updatePayload: Record<string, unknown> = { ...parsed };

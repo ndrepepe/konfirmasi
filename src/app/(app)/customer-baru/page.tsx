@@ -33,7 +33,12 @@ export default async function CustomerBaruPage({
         <Panel title={editingRow ? "Edit Customer Baru" : "Form Customer Baru"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updateCustomerBaru : createCustomerBaru} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
-            <BranchSelect branches={branches} profile={profile} defaultValue={editingRow?.branch_id} />
+            <BranchSelect
+              branches={branches}
+              profile={profile}
+              defaultValue={editingRow?.branch_id}
+              limitToAssigned={profile.role === "accounting"}
+            />
             <Input label="Customer Baru" name="customer_new" defaultValue={String(editingRow?.customer_new ?? "")} />
             <SalesSelect
               label="Sales yg mengajukan"

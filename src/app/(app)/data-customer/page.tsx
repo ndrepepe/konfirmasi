@@ -13,7 +13,7 @@ import { StatusSelect } from "@/components/status-select";
 import { CompactInputDataLayout, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
-import { canViewAllBranches } from "@/lib/permissions";
+import { canViewAllBranches, getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function DataCustomerPage({
   searchParams,
@@ -37,6 +37,11 @@ export default async function DataCustomerPage({
     }),
   ]);
   const editingCustomer = customers.find((customer) => customer.id === params.edit);
+  const configuredBranchIds = getConfiguredBranchIds(profile);
+  const inputBranches =
+    profile.role === "accounting"
+      ? branches.filter((branch) => configuredBranchIds.includes(branch.id))
+      : branches;
   const editHrefFor = (id: string) => {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
@@ -57,7 +62,12 @@ export default async function DataCustomerPage({
           <form action={editingCustomer ? updateCustomerData : createCustomerData} className="grid gap-4">
             {editingCustomer ? <input type="hidden" name="id" value={editingCustomer.id} /> : null}
             <Input label="ID Customer" name="customer_code" defaultValue={editingCustomer?.customer_code} />
-            <BranchSelect branches={branches} profile={profile} defaultValue={editingCustomer?.branch_id} />
+            <BranchSelect
+              branches={branches}
+              profile={profile}
+              defaultValue={editingCustomer?.branch_id}
+              limitToAssigned={profile.role === "accounting"}
+            />
             <Input label="Nama Customer" name="customer_name" defaultValue={editingCustomer?.customer_name} />
             <StatusSelect defaultValue={editingCustomer?.status ?? "Aktif"} />
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -95,7 +105,7 @@ export default async function DataCustomerPage({
                 required={false}
                 defaultValue={params.branch_id ?? ""}
                 placeholder="Semua"
-                options={branches.map((branch) => ({
+                options={inputBranches.map((branch) => ({
                   value: branch.id,
                   label: branch.name,
                   searchText: `${branch.code} ${branch.name}`,
