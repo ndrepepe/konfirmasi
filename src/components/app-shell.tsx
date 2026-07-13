@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
 import { NavLink } from "@/components/nav-link";
 import { NavPrefetcher } from "@/components/nav-prefetcher";
-import { SubmitButton } from "@/components/submit-button";
 import { navItems } from "@/lib/nav";
 import { canAccessMenu, roleLabels } from "@/lib/permissions";
 import type { Profile } from "@/lib/types";
@@ -45,12 +44,12 @@ export function AppShell({
               <p className="mt-2 text-xs font-medium text-teal-700">{roleLabels[profile.role]}</p>
             </div>
             <form action={signOut} className="mt-3">
-              <SubmitButton
-                className="h-10 w-full border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:bg-slate-100"
-                pendingText="Keluar..."
+              <button
+                type="submit"
+                className="h-10 w-full rounded-md border border-slate-300 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Keluar
-              </SubmitButton>
+              </button>
             </form>
           </div>
         </div>
