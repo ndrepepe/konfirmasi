@@ -42,6 +42,7 @@ export async function getCustomers(
     status?: string;
     branchId?: string;
     limit?: number;
+    limitAccountingToConfiguredBranches?: boolean;
   } = {},
 ) {
   const supabase = await createClient();
@@ -56,6 +57,16 @@ export async function getCustomers(
 
     if (!canViewAllBranches(profile)) {
       const branchIds = getAssignedBranchIds(profile);
+      if (!branchIds.length) return null;
+      query = query.in("branch_id", branchIds);
+    }
+
+    if (
+      profile.role === "accounting" &&
+      options.limitAccountingToConfiguredBranches &&
+      !options.branchId
+    ) {
+      const branchIds = getConfiguredBranchIds(profile);
       if (!branchIds.length) return null;
       query = query.in("branch_id", branchIds);
     }

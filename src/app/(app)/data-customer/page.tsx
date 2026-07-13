@@ -34,6 +34,7 @@ export default async function DataCustomerPage({
       branchId: params.branch_id,
       status: params.status,
       limit: 500,
+      limitAccountingToConfiguredBranches: true,
     }),
   ]);
   const editingCustomer = customers.find((customer) => customer.id === params.edit);
