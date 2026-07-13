@@ -27,9 +27,9 @@ export function NavLink({
       className={clsx(
         "flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium transition active:scale-[0.99] lg:gap-3",
         active
-          ? "bg-teal-50 text-teal-900"
-          : "text-slate-700 hover:bg-slate-100 hover:text-slate-950",
-        clicked && !active ? "bg-slate-100 text-slate-950" : "",
+          ? "bg-teal-50 text-red-600"
+          : "text-black hover:bg-teal-50",
+        clicked && !active ? "bg-teal-50 text-black" : "",
       )}
     >
       {children}

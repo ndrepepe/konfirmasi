@@ -32,7 +32,7 @@ export function AppShell({
           <nav className="flex gap-2 overflow-x-auto px-3 py-3 sm:px-4 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto lg:pb-3 lg:pt-5">
             {items.map((item) => (
               <NavLink key={item.href} href={item.href}>
-                <item.icon className="h-4 w-4 text-teal-700" aria-hidden />
+                <item.icon className="h-4 w-4" aria-hidden />
                 {item.label}
               </NavLink>
             ))}
