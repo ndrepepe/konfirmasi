@@ -30,11 +30,17 @@ export function SearchableSelect({
   onChange?: (value: string) => void;
 }) {
   const [internalValue, setInternalValue] = useState(defaultValue);
+  const [internalLabel, setInternalLabel] = useState("");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const selectedValue = value ?? internalValue;
-  const selected = options.find((option) => option.value === selectedValue);
+  const selected =
+    internalLabel && value === undefined
+      ? (options.find(
+          (option) => option.value === selectedValue && option.label === internalLabel,
+        ) ?? options.find((option) => option.value === selectedValue))
+      : options.find((option) => option.value === selectedValue);
 
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -45,9 +51,18 @@ export function SearchableSelect({
     );
   }, [options, query]);
 
-  function choose(nextValue: string) {
-    setInternalValue(nextValue);
-    onChange?.(nextValue);
+  function choose(option: SearchableSelectOption) {
+    setInternalValue(option.value);
+    setInternalLabel(option.label);
+    onChange?.(option.value);
+    setOpen(false);
+    setQuery("");
+  }
+
+  function clear() {
+    setInternalValue("");
+    setInternalLabel("");
+    onChange?.("");
     setOpen(false);
     setQuery("");
   }
@@ -94,7 +109,7 @@ export function SearchableSelect({
                 type="button"
                 onPointerDown={(event) => {
                   event.preventDefault();
-                  choose("");
+                  clear();
                 }}
                 className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
               >
@@ -109,12 +124,12 @@ export function SearchableSelect({
                   type="button"
                   onPointerDown={(event) => {
                     event.preventDefault();
-                    choose(option.value);
+                    choose(option);
                   }}
                   className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
-                  {option.value === selectedValue ? (
+                  {option.value === selectedValue && option.label === selected?.label ? (
                     <Check className="h-4 w-4 shrink-0 text-teal-700" aria-hidden />
                   ) : null}
                 </button>
