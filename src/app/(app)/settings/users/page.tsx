@@ -19,7 +19,7 @@ async function getUsers() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, branch_id, branches(id, code, name)")
+    .select("id, full_name, email, role, branch_id, branches!profiles_branch_id_fkey(id, code, name)")
     .order("full_name");
   if (error) throw new Error(error.message);
 
