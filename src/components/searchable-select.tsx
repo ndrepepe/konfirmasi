@@ -32,7 +32,7 @@ export function SearchableSelect({
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const wrapperRef = useRef<HTMLLabelElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const selectedValue = value ?? internalValue;
   const selected = options.find((option) => option.value === selectedValue);
 
@@ -53,7 +53,7 @@ export function SearchableSelect({
   }
 
   return (
-    <label
+    <div
       ref={wrapperRef}
       className="relative grid gap-1.5 text-sm font-medium text-slate-700"
       onBlur={(event) => {
@@ -63,7 +63,7 @@ export function SearchableSelect({
         }
       }}
     >
-      {label}
+      <span>{label}</span>
       {name ? <input name={name} value={selectedValue} readOnly hidden required={required} /> : null}
       <button
         type="button"
@@ -92,7 +92,10 @@ export function SearchableSelect({
             {!required ? (
               <button
                 type="button"
-                onClick={() => choose("")}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  choose("");
+                }}
                 className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
               >
                 <span>{placeholder}</span>
@@ -104,7 +107,10 @@ export function SearchableSelect({
                 <button
                   key={`${option.value}-${option.label}`}
                   type="button"
-                  onClick={() => choose(option.value)}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    choose(option.value);
+                  }}
                   className="flex min-h-11 w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-base text-slate-700 hover:bg-slate-100 sm:min-h-0 sm:text-sm"
                 >
                   <span className="min-w-0 truncate">{option.label}</span>
@@ -119,6 +125,6 @@ export function SearchableSelect({
           </div>
         </div>
       ) : null}
-    </label>
+    </div>
   );
 }

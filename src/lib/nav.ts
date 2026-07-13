@@ -15,6 +15,6 @@ export const navItems = [
   { href: "/penagihan", label: "Penagihan", icon: ReceiptText },
   { href: "/data-sales", label: "Data Sales", icon: UserRound },
   { href: "/data-customer", label: "Data Customer", icon: FileText },
-  { href: "/settings/users", label: "Seting User", icon: Users },
   { href: "/settings/branches", label: "Data Cabang", icon: Building2 },
+  { href: "/settings/users", label: "Seting User", icon: Users },
 ] as const;
