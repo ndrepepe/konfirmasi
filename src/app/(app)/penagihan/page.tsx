@@ -6,7 +6,7 @@ import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getActiveCustomers, getBranches, getReports } from "@/lib/data";
+import { getBranches, getCustomers, getReports } from "@/lib/data";
 import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function PenagihanPage({
@@ -19,7 +19,7 @@ export default async function PenagihanPage({
   const [branches, rows, customers] = await Promise.all([
     getBranches(),
     getReports("penagihan_reports", profile),
-    getActiveCustomers(profile),
+    getCustomers(profile, { limit: 50000 }),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
   const configuredBranchIds = getConfiguredBranchIds(profile);
