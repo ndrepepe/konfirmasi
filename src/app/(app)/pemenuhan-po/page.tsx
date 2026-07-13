@@ -24,6 +24,25 @@ export default async function PemenuhanPoPage({
     getActiveCustomers(profile),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
+  const canInputPemenuhanPo = profile.role !== "accounting";
+  const dataPanel = (
+    <Panel title="Data Pemenuhan PO" className="flex min-h-0 flex-col">
+      <ReportTable
+        rows={rows}
+        editHrefBase={canInputPemenuhanPo ? "/pemenuhan-po" : undefined}
+        viewHrefBase={profile.role === "accounting" ? "/pemenuhan-po" : undefined}
+        deleteAction={profile.role === "super_user" ? deletePemenuhanPo : undefined}
+        columns={[
+          { key: "customer_name", label: "Customer" },
+          { key: "sales_name", label: "Sales" },
+          { key: "po_date", label: "Tanggal PO" },
+          { key: "po_number", label: "No PO" },
+          { key: "contact_person", label: "CP" },
+          { key: "phone", label: "No HP" },
+        ]}
+      />
+    </Panel>
+  );
 
   return (
     <Guard profile={profile} href="/pemenuhan-po">
@@ -31,7 +50,8 @@ export default async function PemenuhanPoPage({
         title="Pemenuhan PO"
         description="Catat data PO, lampiran PO, dan bukti konfirmasi untuk proses pemenuhan."
       />
-      <InputDataLayout>
+      {canInputPemenuhanPo ? (
+        <InputDataLayout>
         <Panel title={editingRow ? "Edit Pemenuhan PO" : "Form Pemenuhan PO"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updatePemenuhanPo : createPemenuhanPo} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
@@ -77,23 +97,11 @@ export default async function PemenuhanPoPage({
             </div>
           </form>
         </Panel>
-        <Panel title="Data Pemenuhan PO" className="flex min-h-0 flex-col">
-          <ReportTable
-            rows={rows}
-            editHrefBase={profile.role === "accounting" ? undefined : "/pemenuhan-po"}
-            viewHrefBase={profile.role === "accounting" ? "/pemenuhan-po" : undefined}
-            deleteAction={profile.role === "super_user" ? deletePemenuhanPo : undefined}
-            columns={[
-              { key: "customer_name", label: "Customer" },
-              { key: "sales_name", label: "Sales" },
-              { key: "po_date", label: "Tanggal PO" },
-              { key: "po_number", label: "No PO" },
-              { key: "contact_person", label: "CP" },
-              { key: "phone", label: "No HP" },
-            ]}
-          />
-        </Panel>
-      </InputDataLayout>
+        {dataPanel}
+        </InputDataLayout>
+      ) : (
+        <div className="grid gap-5">{dataPanel}</div>
+      )}
     </Guard>
   );
 }
