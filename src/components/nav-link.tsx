@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { clsx } from "clsx";
 
 export function NavLink({
@@ -13,7 +12,6 @@ export function NavLink({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [clicked, setClicked] = useState(false);
   const active = pathname === href;
 
   return (
@@ -21,15 +19,11 @@ export function NavLink({
       href={href}
       prefetch
       aria-current={active ? "page" : undefined}
-      onClick={() => {
-        if (!active) setClicked(true);
-      }}
       className={clsx(
         "flex min-h-11 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium transition active:scale-[0.99] lg:gap-3",
         active
           ? "bg-teal-50 text-red-600"
           : "text-black hover:bg-teal-50",
-        clicked && !active ? "bg-teal-50 text-black" : "",
       )}
     >
       {children}
