@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Guard } from "@/components/app-shell";
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getAttachmentLinks } from "@/lib/storage";
 import type { ReportRow } from "@/lib/types";
@@ -70,6 +71,20 @@ export default async function PemenuhanPoDetailPage({
   if (!data) notFound();
 
   const row = data as ReportRow;
+  let createdByName = row.profiles?.full_name ?? "";
+  if (!createdByName) {
+    try {
+      const admin = createAdminClient();
+      const { data: creator } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", row.created_by)
+        .maybeSingle();
+      createdByName = creator?.full_name ?? "";
+    } catch {
+      createdByName = "";
+    }
+  }
   const [poFiles, confirmationFiles] = await Promise.all([
     getAttachmentLinks(row.po_file),
     getAttachmentLinks(row.confirmation_file),
@@ -91,7 +106,7 @@ export default async function PemenuhanPoDetailPage({
             <Field label="No PO" value={String(row.po_number ?? "")} />
             <Field label="Contact Person" value={String(row.contact_person ?? "")} />
             <Field label="No HP" value={String(row.phone ?? "")} />
-            <Field label="Input Oleh" value={row.profiles?.full_name ?? "-"} />
+            <Field label="Input Oleh" value={createdByName || "-"} />
             <Field
               label="Tanggal Input"
               value={new Date(row.created_at).toLocaleString("id-ID")}
