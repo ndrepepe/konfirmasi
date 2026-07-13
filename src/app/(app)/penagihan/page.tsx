@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { createPenagihan, deletePenagihan, updatePenagihan } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
-import { BranchSelect } from "@/components/branch-select";
-import { CustomerSelect } from "@/components/customer-select";
+import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCustomers, getBranches, getReports } from "@/lib/data";
+import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function PenagihanPage({
   searchParams,
@@ -22,6 +22,11 @@ export default async function PenagihanPage({
     getActiveCustomers(profile),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
+  const configuredBranchIds = getConfiguredBranchIds(profile);
+  const inputBranches =
+    profile.role === "accounting"
+      ? branches.filter((branch) => configuredBranchIds.includes(branch.id))
+      : branches;
 
   return (
     <Guard profile={profile} href="/penagihan">
@@ -33,13 +38,12 @@ export default async function PenagihanPage({
         <Panel title={editingRow ? "Edit Penagihan" : "Form Penagihan"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updatePenagihan : createPenagihan} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
-            <BranchSelect
-              branches={branches}
-              profile={profile}
-              defaultValue={editingRow?.branch_id}
-              limitToAssigned={profile.role === "accounting"}
+            <BranchScopedCustomerSelect
+              branches={inputBranches}
+              customers={customers}
+              defaultBranchId={editingRow?.branch_id}
+              defaultCustomerName={String(editingRow?.customer_name ?? "")}
             />
-            <CustomerSelect customers={customers} defaultValue={String(editingRow?.customer_name ?? "")} />
             <MultiFileInput
               label="Bukti"
               name="proof_file"

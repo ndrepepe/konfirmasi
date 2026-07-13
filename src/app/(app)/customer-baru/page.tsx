@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { createCustomerBaru, deleteCustomerBaru, updateCustomerBaru } from "@/app/actions/reports";
-import { BranchSelect } from "@/components/branch-select";
 import { Guard } from "@/components/app-shell";
+import { BranchScopedSalesSelect } from "@/components/branch-scoped-fields";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { SalesSelect } from "@/components/sales-select";
 import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getActiveSales, getBranches, getReports } from "@/lib/data";
+import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function CustomerBaruPage({
   searchParams,
@@ -22,6 +22,11 @@ export default async function CustomerBaruPage({
     getActiveSales(),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
+  const configuredBranchIds = getConfiguredBranchIds(profile);
+  const inputBranches =
+    profile.role === "accounting"
+      ? branches.filter((branch) => configuredBranchIds.includes(branch.id))
+      : branches;
 
   return (
     <Guard profile={profile} href="/customer-baru">
@@ -33,19 +38,14 @@ export default async function CustomerBaruPage({
         <Panel title={editingRow ? "Edit Customer Baru" : "Form Customer Baru"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updateCustomerBaru : createCustomerBaru} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
-            <BranchSelect
-              branches={branches}
-              profile={profile}
-              defaultValue={editingRow?.branch_id}
-              limitToAssigned={profile.role === "accounting"}
-            />
-            <Input label="Customer Baru" name="customer_new" defaultValue={String(editingRow?.customer_new ?? "")} />
-            <SalesSelect
-              label="Sales yg mengajukan"
-              name="sales_requester"
+            <BranchScopedSalesSelect
+              branches={inputBranches}
               sales={sales}
-              defaultValue={String(editingRow?.sales_requester ?? "")}
-            />
+              defaultBranchId={editingRow?.branch_id}
+              defaultSalesName={String(editingRow?.sales_requester ?? "")}
+            >
+              <Input label="Customer Baru" name="customer_new" defaultValue={String(editingRow?.customer_new ?? "")} />
+            </BranchScopedSalesSelect>
             <Input
               label="Tanggal Input Bsoft"
               name="bsoft_input_date"
