@@ -19,6 +19,7 @@ export function SearchableSelect({
   defaultValue = "",
   value,
   onChange,
+  onSearchQueryChange,
 }: {
   label: string;
   name?: string;
@@ -28,6 +29,7 @@ export function SearchableSelect({
   defaultValue?: string;
   value?: string;
   onChange?: (value: string) => void;
+  onSearchQueryChange?: (query: string) => void;
 }) {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [internalLabel, setInternalLabel] = useState("");
@@ -57,6 +59,7 @@ export function SearchableSelect({
     onChange?.(option.value);
     setOpen(false);
     setQuery("");
+    onSearchQueryChange?.("");
   }
 
   function clear() {
@@ -65,6 +68,7 @@ export function SearchableSelect({
     onChange?.("");
     setOpen(false);
     setQuery("");
+    onSearchQueryChange?.("");
   }
 
   return (
@@ -98,7 +102,10 @@ export function SearchableSelect({
             <input
               autoFocus
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                onSearchQueryChange?.(event.target.value);
+              }}
               placeholder="Cari..."
               className="h-10 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-9 sm:text-sm"
             />

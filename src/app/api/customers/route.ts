@@ -7,6 +7,12 @@ export async function GET(request: Request) {
   const profile = await requireProfile();
   const { searchParams } = new URL(request.url);
   const branchId = searchParams.get("branch_id") ?? "";
+  const search = searchParams.get("q") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const requestedLimit = Number(searchParams.get("limit") ?? "100");
+  const limit = Number.isFinite(requestedLimit)
+    ? Math.min(Math.max(requestedLimit, 1), 200)
+    : 100;
 
   if (!branchId) {
     return NextResponse.json({ customers: [] });
@@ -16,6 +22,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ customers: [] }, { status: 403 });
   }
 
-  const customers = await getCustomers(profile, { branchId, limit: 50000 });
+  const customers = await getCustomers(profile, {
+    branchId,
+    search,
+    status: status || undefined,
+    limit,
+  });
   return NextResponse.json({ customers });
 }

@@ -77,15 +77,18 @@ export function BranchScopedCustomerSelect({
   defaultBranchId = "",
   defaultCustomerName = "",
   loadCustomersByBranch = false,
+  customerStatus,
 }: {
   branches: Branch[];
   customers?: Customer[];
   defaultBranchId?: string;
   defaultCustomerName?: string;
   loadCustomersByBranch?: boolean;
+  customerStatus?: string;
 }) {
   const [branchId, setBranchId] = useState(defaultBranchId);
   const [customerName, setCustomerName] = useState(defaultCustomerName);
+  const [customerSearch, setCustomerSearch] = useState("");
   const [loadedCustomers, setLoadedCustomers] = useState<Customer[]>([]);
   const availableCustomers = loadCustomersByBranch ? loadedCustomers : customers;
   const filteredCustomers = useMemo(
@@ -121,20 +124,32 @@ export function BranchScopedCustomerSelect({
     if (!branchId) return;
 
     const controller = new AbortController();
-    fetch(`/api/customers?branch_id=${encodeURIComponent(branchId)}`, {
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("Gagal mengambil data customer.");
-        return response.json() as Promise<{ customers: Customer[] }>;
-      })
-      .then((payload) => setLoadedCustomers(payload.customers))
-      .catch((error) => {
-        if (error.name !== "AbortError") setLoadedCustomers([]);
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({
+        branch_id: branchId,
+        limit: "100",
       });
+      if (customerStatus) params.set("status", customerStatus);
+      if (customerSearch.trim()) params.set("q", customerSearch.trim());
 
-    return () => controller.abort();
-  }, [branchId, customers, loadCustomersByBranch]);
+      fetch(`/api/customers?${params.toString()}`, {
+        signal: controller.signal,
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("Gagal mengambil data customer.");
+          return response.json() as Promise<{ customers: Customer[] }>;
+        })
+        .then((payload) => setLoadedCustomers(payload.customers))
+        .catch((error) => {
+          if (error.name !== "AbortError") setLoadedCustomers([]);
+        });
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [branchId, customerSearch, customerStatus, loadCustomersByBranch]);
 
   function changeBranch(value: string) {
     setBranchId(value);
@@ -162,6 +177,7 @@ export function BranchScopedCustomerSelect({
         placeholder="Pilih customer"
         value={customerName}
         onChange={setCustomerName}
+        onSearchQueryChange={setCustomerSearch}
         options={customerOptions}
       />
     </>

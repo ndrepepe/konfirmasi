@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
 import { NavLink } from "@/components/nav-link";
-import { NavPrefetcher } from "@/components/nav-prefetcher";
 import { navItems } from "@/lib/nav";
 import { canAccessMenu, roleLabels } from "@/lib/permissions";
 import type { Profile } from "@/lib/types";
@@ -14,11 +13,9 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const items = navItems.filter((item) => canAccessMenu(profile, item.href));
-  const hrefs = items.map((item) => item.href);
 
   return (
     <div className="flex min-h-screen flex-col lg:grid lg:h-screen lg:grid-cols-[280px_1fr] lg:overflow-hidden">
-      <NavPrefetcher hrefs={hrefs} />
       <aside className="max-h-[45vh] shrink-0 overflow-y-auto border-b border-slate-200 bg-white lg:h-screen lg:max-h-none lg:border-b-0 lg:border-r">
         <div className="flex min-h-full flex-col">
           <div className="border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">

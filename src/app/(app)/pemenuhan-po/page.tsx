@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { createPemenuhanPo, deletePemenuhanPo, updatePemenuhanPo } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
-import { BranchSelect } from "@/components/branch-select";
-import { CustomerSelect } from "@/components/customer-select";
+import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { SalesSelect } from "@/components/sales-select";
 import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getActiveCustomers, getActiveSales, getBranches, getReports } from "@/lib/data";
+import { getActiveSales, getBranches, getReports } from "@/lib/data";
+import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function PemenuhanPoPage({
   searchParams,
@@ -17,14 +17,18 @@ export default async function PemenuhanPoPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
-  const [branches, rows, sales, customers] = await Promise.all([
+  const [branches, rows, sales] = await Promise.all([
     getBranches(),
     getReports("pemenuhan_po_reports", profile, { limitAccountingToConfiguredBranches: true }),
     getActiveSales(profile),
-    getActiveCustomers(profile),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
   const canInputPemenuhanPo = profile.role !== "accounting";
+  const configuredBranchIds = getConfiguredBranchIds(profile);
+  const inputBranches =
+    profile.role === "super_user"
+      ? branches
+      : branches.filter((branch) => configuredBranchIds.includes(branch.id));
   const dataPanel = (
     <Panel title="Data Pemenuhan PO" className="flex min-h-0 flex-col">
       <ReportTable
@@ -55,13 +59,13 @@ export default async function PemenuhanPoPage({
         <Panel title={editingRow ? "Edit Pemenuhan PO" : "Form Pemenuhan PO"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updatePemenuhanPo : createPemenuhanPo} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
-            <BranchSelect
-              branches={branches}
-              profile={profile}
-              defaultValue={editingRow?.branch_id}
-              limitToAssigned={profile.role === "accounting"}
+            <BranchScopedCustomerSelect
+              branches={inputBranches}
+              defaultBranchId={editingRow?.branch_id}
+              defaultCustomerName={String(editingRow?.customer_name ?? "")}
+              loadCustomersByBranch
+              customerStatus="Aktif"
             />
-            <CustomerSelect customers={customers} defaultValue={String(editingRow?.customer_name ?? "")} />
             <SalesSelect
               label="Nama Sales"
               name="sales_name"
