@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createPenagihan, deletePenagihan, updatePenagihan } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
+import { InputDataSkeleton } from "@/components/loading-panels";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
@@ -16,6 +18,30 @@ export default async function PenagihanPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
+
+  return (
+    <Guard profile={profile} href="/penagihan">
+      <PageHeader
+        title="Penagihan"
+        description="Catat bukti penagihan untuk customer pada cabang terkait."
+      />
+      <Suspense
+        key={params.edit ?? "new"}
+        fallback={<InputDataSkeleton formTitle="Form Penagihan" dataTitle="Data Penagihan" />}
+      >
+        <PenagihanContent profile={profile} params={params} />
+      </Suspense>
+    </Guard>
+  );
+}
+
+async function PenagihanContent({
+  profile,
+  params,
+}: {
+  profile: Awaited<ReturnType<typeof requireProfile>>;
+  params: { edit?: string };
+}) {
   const [branches, rows] = await Promise.all([
     getBranches(),
     getReports("penagihan_reports", profile),
@@ -28,12 +54,7 @@ export default async function PenagihanPage({
       : branches;
 
   return (
-    <Guard profile={profile} href="/penagihan">
-      <PageHeader
-        title="Penagihan"
-        description="Catat bukti penagihan untuk customer pada cabang terkait."
-      />
-      <InputDataLayout>
+    <InputDataLayout>
         <Panel title={editingRow ? "Edit Penagihan" : "Form Penagihan"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updatePenagihan : createPenagihan} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
@@ -70,7 +91,6 @@ export default async function PenagihanPage({
             columns={[{ key: "customer_name", label: "Customer" }]}
           />
         </Panel>
-      </InputDataLayout>
-    </Guard>
+    </InputDataLayout>
   );
 }

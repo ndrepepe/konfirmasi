@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createCustomerBaru, deleteCustomerBaru, updateCustomerBaru } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchScopedSalesSelect } from "@/components/branch-scoped-fields";
+import { InputDataSkeleton } from "@/components/loading-panels";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
@@ -16,6 +18,30 @@ export default async function CustomerBaruPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
+
+  return (
+    <Guard profile={profile} href="/customer-baru">
+      <PageHeader
+        title="Customer Baru"
+        description="Input customer baru berikut bukti konfirmasi WhatsApp dan informasi Bsoft."
+      />
+      <Suspense
+        key={params.edit ?? "new"}
+        fallback={<InputDataSkeleton formTitle="Form Customer Baru" dataTitle="Data Customer Baru" />}
+      >
+        <CustomerBaruContent profile={profile} params={params} />
+      </Suspense>
+    </Guard>
+  );
+}
+
+async function CustomerBaruContent({
+  profile,
+  params,
+}: {
+  profile: Awaited<ReturnType<typeof requireProfile>>;
+  params: { edit?: string };
+}) {
   const [branches, rows, sales] = await Promise.all([
     getBranches(),
     getReports("customer_baru_reports", profile),
@@ -29,12 +55,7 @@ export default async function CustomerBaruPage({
       : branches;
 
   return (
-    <Guard profile={profile} href="/customer-baru">
-      <PageHeader
-        title="Customer Baru"
-        description="Input customer baru berikut bukti konfirmasi WhatsApp dan informasi Bsoft."
-      />
-      <InputDataLayout>
+    <InputDataLayout>
         <Panel title={editingRow ? "Edit Customer Baru" : "Form Customer Baru"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updateCustomerBaru : createCustomerBaru} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
@@ -89,7 +110,6 @@ export default async function CustomerBaruPage({
             ]}
           />
         </Panel>
-      </InputDataLayout>
-    </Guard>
+    </InputDataLayout>
   );
 }

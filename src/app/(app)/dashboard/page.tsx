@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { DashboardSkeleton } from "@/components/loading-panels";
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getConfiguredBranchIds, roleLabels } from "@/lib/permissions";
@@ -16,7 +18,7 @@ async function countRows(table: string, branchIds: string[], all: boolean) {
   return count ?? 0;
 }
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const profile = await requireProfile();
   const all = profile.role === "super_user";
   const branchIds = all ? [] : getConfiguredBranchIds(profile);
@@ -35,10 +37,6 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader
-        title="Dashboard"
-        description="Ringkasan laporan prosedur konfirmasi berdasarkan hak akses user."
-      />
       <div className="grid gap-4 md:grid-cols-3">
         <Panel title="Customer Baru">
           <p className="text-3xl font-semibold text-slate-950">{customers}</p>
@@ -71,6 +69,20 @@ export default async function DashboardPage() {
           </div>
         </dl>
       </Panel>
+    </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <>
+      <PageHeader
+        title="Dashboard"
+        description="Ringkasan laporan prosedur konfirmasi berdasarkan hak akses user."
+      />
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
     </>
   );
 }

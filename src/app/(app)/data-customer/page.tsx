@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   createCustomerData,
   deleteCustomerData,
@@ -7,6 +8,7 @@ import {
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerExcelImporter } from "@/components/customer-excel-importer";
+import { InputDataSkeleton } from "@/components/loading-panels";
 import { SearchableTable } from "@/components/searchable-table";
 import { SearchableSelect } from "@/components/searchable-select";
 import { StatusSelect } from "@/components/status-select";
@@ -27,6 +29,36 @@ export default async function DataCustomerPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
+  const suspenseKey = JSON.stringify(params);
+
+  return (
+    <Guard profile={profile} href="/data-customer">
+      <PageHeader
+        title="Data Customer"
+        description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
+      />
+      <Suspense
+        key={suspenseKey}
+        fallback={<InputDataSkeleton formTitle="Tambah Customer" dataTitle="Daftar Customer" compact />}
+      >
+        <DataCustomerContent profile={profile} params={params} />
+      </Suspense>
+    </Guard>
+  );
+}
+
+async function DataCustomerContent({
+  profile,
+  params,
+}: {
+  profile: Awaited<ReturnType<typeof requireProfile>>;
+  params: {
+    q?: string;
+    branch_id?: string;
+    status?: string;
+    edit?: string;
+  };
+}) {
   const [branches, customers] = await Promise.all([
     getBranches(),
     getCustomers(profile, {
@@ -53,12 +85,7 @@ export default async function DataCustomerPage({
   };
 
   return (
-    <Guard profile={profile} href="/data-customer">
-      <PageHeader
-        title="Data Customer"
-        description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
-      />
-      <CompactInputDataLayout>
+    <CompactInputDataLayout>
         <Panel title={editingCustomer ? "Edit Customer" : "Tambah Customer"} className="flex min-h-0 flex-col">
           <form action={editingCustomer ? updateCustomerData : createCustomerData} className="grid gap-4">
             {editingCustomer ? <input type="hidden" name="id" value={editingCustomer.id} /> : null}
@@ -151,7 +178,6 @@ export default async function DataCustomerPage({
             deleteAction={profile.role === "super_user" ? deleteCustomerData : undefined}
           />
         </Panel>
-      </CompactInputDataLayout>
-    </Guard>
+    </CompactInputDataLayout>
   );
 }

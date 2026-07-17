@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createSales, deleteSales, updateSales } from "@/app/actions/master-data";
 import { Guard } from "@/components/app-shell";
+import { InputDataSkeleton } from "@/components/loading-panels";
 import { SalesExcelImporter } from "@/components/sales-excel-importer";
 import { SearchableTable } from "@/components/searchable-table";
 import {
@@ -23,6 +25,30 @@ export default async function DataSalesPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
+
+  return (
+    <Guard profile={profile} href="/data-sales">
+      <PageHeader
+        title="Data Sales"
+        description="Kelola master sales yang digunakan pada Customer Baru dan Pemenuhan PO."
+      />
+      <Suspense
+        key={params.edit ?? "new"}
+        fallback={<InputDataSkeleton formTitle="Tambah Sales" dataTitle="Daftar Sales" compact />}
+      >
+        <DataSalesContent profile={profile} params={params} />
+      </Suspense>
+    </Guard>
+  );
+}
+
+async function DataSalesContent({
+  profile,
+  params,
+}: {
+  profile: Awaited<ReturnType<typeof requireProfile>>;
+  params: { edit?: string };
+}) {
   const [branches, sales] = await Promise.all([getBranches(), getSales()]);
   const editingSales = sales.find((item) => item.id === params.edit);
   const configuredBranchIds = getConfiguredBranchIds(profile);
@@ -32,12 +58,7 @@ export default async function DataSalesPage({
       : branches;
 
   return (
-    <Guard profile={profile} href="/data-sales">
-      <PageHeader
-        title="Data Sales"
-        description="Kelola master sales yang digunakan pada Customer Baru dan Pemenuhan PO."
-      />
-      <CompactInputDataLayout>
+    <CompactInputDataLayout>
         <Panel title={editingSales ? "Edit Sales" : "Tambah Sales"} className="flex min-h-0 flex-col">
           <form action={editingSales ? updateSales : createSales} className="grid gap-4">
             {editingSales ? <input type="hidden" name="id" value={editingSales.id} /> : null}
@@ -92,7 +113,6 @@ export default async function DataSalesPage({
             deleteAction={profile.role === "super_user" ? deleteSales : undefined}
           />
         </Panel>
-      </CompactInputDataLayout>
-    </Guard>
+    </CompactInputDataLayout>
   );
 }

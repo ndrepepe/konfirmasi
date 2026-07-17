@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createPemenuhanPo, deletePemenuhanPo, updatePemenuhanPo } from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
+import { InputDataSkeleton } from "@/components/loading-panels";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { SalesSelect } from "@/components/sales-select";
@@ -17,6 +19,30 @@ export default async function PemenuhanPoPage({
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
+
+  return (
+    <Guard profile={profile} href="/pemenuhan-po">
+      <PageHeader
+        title="Pemenuhan PO"
+        description="Catat data PO, lampiran PO, dan bukti konfirmasi untuk proses pemenuhan."
+      />
+      <Suspense
+        key={params.edit ?? "new"}
+        fallback={<InputDataSkeleton formTitle="Form Pemenuhan PO" dataTitle="Data Pemenuhan PO" />}
+      >
+        <PemenuhanPoContent profile={profile} params={params} />
+      </Suspense>
+    </Guard>
+  );
+}
+
+async function PemenuhanPoContent({
+  profile,
+  params,
+}: {
+  profile: Awaited<ReturnType<typeof requireProfile>>;
+  params: { edit?: string };
+}) {
   const [branches, rows, sales] = await Promise.all([
     getBranches(),
     getReports("pemenuhan_po_reports", profile, { limitAccountingToConfiguredBranches: true }),
@@ -49,11 +75,7 @@ export default async function PemenuhanPoPage({
   );
 
   return (
-    <Guard profile={profile} href="/pemenuhan-po">
-      <PageHeader
-        title="Pemenuhan PO"
-        description="Catat data PO, lampiran PO, dan bukti konfirmasi untuk proses pemenuhan."
-      />
+    <>
       {canInputPemenuhanPo ? (
         <InputDataLayout>
         <Panel title={editingRow ? "Edit Pemenuhan PO" : "Form Pemenuhan PO"} className="flex min-h-0 flex-col">
@@ -111,6 +133,6 @@ export default async function PemenuhanPoPage({
       ) : (
         <div className="grid gap-5">{dataPanel}</div>
       )}
-    </Guard>
+    </>
   );
 }
