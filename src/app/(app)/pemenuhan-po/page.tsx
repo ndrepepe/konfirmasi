@@ -6,10 +6,9 @@ import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
 import { InputDataSkeleton } from "@/components/loading-panels";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
-import { SalesSelect } from "@/components/sales-select";
 import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getActiveSales, getBranches, getReports } from "@/lib/data";
+import { getBranches, getReports } from "@/lib/data";
 import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function PemenuhanPoPage({
@@ -43,10 +42,9 @@ async function PemenuhanPoContent({
   profile: Awaited<ReturnType<typeof requireProfile>>;
   params: { edit?: string };
 }) {
-  const [branches, rows, sales] = await Promise.all([
+  const [branches, rows] = await Promise.all([
     getBranches(),
     getReports("pemenuhan_po_reports", profile, { limitAccountingToConfiguredBranches: true }),
-    getActiveSales(profile),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
   const canInputPemenuhanPo = profile.role !== "accounting";
@@ -87,12 +85,11 @@ async function PemenuhanPoContent({
               defaultCustomerName={String(editingRow?.customer_name ?? "")}
               loadCustomersByBranch
               customerStatus="Aktif"
-            />
-            <SalesSelect
-              label="Nama Sales"
-              name="sales_name"
-              sales={sales}
-              defaultValue={String(editingRow?.sales_name ?? "")}
+              defaultSalesName={String(editingRow?.sales_name ?? "")}
+              loadSalesByBranch
+              salesLabel="Nama Sales"
+              salesNameField="sales_name"
+              salesStatus="Aktif"
             />
             <Input
               label="Tanggal PO"

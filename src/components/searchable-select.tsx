@@ -19,6 +19,7 @@ export function SearchableSelect({
   defaultValue = "",
   value,
   onChange,
+  onOpen,
   onSearchQueryChange,
 }: {
   label: string;
@@ -29,6 +30,7 @@ export function SearchableSelect({
   defaultValue?: string;
   value?: string;
   onChange?: (value: string) => void;
+  onOpen?: () => void;
   onSearchQueryChange?: (query: string) => void;
 }) {
   const [internalValue, setInternalValue] = useState(defaultValue);
@@ -79,6 +81,7 @@ export function SearchableSelect({
         if (!wrapperRef.current?.contains(event.relatedTarget)) {
           setOpen(false);
           setQuery("");
+          onSearchQueryChange?.("");
         }
       }}
     >
@@ -86,7 +89,13 @@ export function SearchableSelect({
       {name ? <input name={name} value={selectedValue} readOnly hidden required={required} /> : null}
       <button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() =>
+          setOpen((current) => {
+            const next = !current;
+            if (next) onOpen?.();
+            return next;
+          })
+        }
         className={clsx(
           "flex h-11 w-full items-center justify-between gap-3 rounded-md border border-slate-300 bg-white px-3 text-left text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm",
           selected ? "text-slate-900" : "text-slate-400",

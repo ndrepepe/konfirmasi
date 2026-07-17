@@ -8,7 +8,7 @@ import { MultiFileInput } from "@/components/multi-file-input";
 import { ReportTable } from "@/components/report-table";
 import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getActiveSales, getBranches, getReports } from "@/lib/data";
+import { getBranches, getReports } from "@/lib/data";
 import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function CustomerBaruPage({
@@ -42,10 +42,9 @@ async function CustomerBaruContent({
   profile: Awaited<ReturnType<typeof requireProfile>>;
   params: { edit?: string };
 }) {
-  const [branches, rows, sales] = await Promise.all([
+  const [branches, rows] = await Promise.all([
     getBranches(),
     getReports("customer_baru_reports", profile),
-    getActiveSales(),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
   const configuredBranchIds = getConfiguredBranchIds(profile);
@@ -61,9 +60,10 @@ async function CustomerBaruContent({
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
             <BranchScopedSalesSelect
               branches={inputBranches}
-              sales={sales}
               defaultBranchId={editingRow?.branch_id}
               defaultSalesName={String(editingRow?.sales_requester ?? "")}
+              loadSalesByBranch
+              salesStatus="Aktif"
             >
               <Input label="Customer Baru" name="customer_new" defaultValue={String(editingRow?.customer_new ?? "")} />
             </BranchScopedSalesSelect>
