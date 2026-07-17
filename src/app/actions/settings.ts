@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { readExcelRows } from "@/lib/excel-import";
@@ -74,6 +74,8 @@ export async function createBranch(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("branches").insert(parsed);
   if (error) throw new Error(error.message);
+  revalidateTag("branches", "max");
+  revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
   redirect("/settings/branches?created=1");
 }
@@ -86,6 +88,8 @@ export async function updateBranch(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from("branches").update(parsed).eq("id", id);
   if (error) throw new Error(error.message);
+  revalidateTag("branches", "max");
+  revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
   redirect("/settings/branches?updated=1");
 }
@@ -98,6 +102,8 @@ export async function deleteBranch(formData: FormData) {
 
   const { error } = await supabase.from("branches").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  revalidateTag("branches", "max");
+  revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
   redirect("/settings/branches?deleted=1");
 }
@@ -124,6 +130,8 @@ export async function importBranches(formData: FormData) {
   });
   if (error) throw new Error(error.message);
 
+  revalidateTag("branches", "max");
+  revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
   redirect("/settings/branches?imported=1");
 }

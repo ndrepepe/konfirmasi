@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { readExcelRows } from "@/lib/excel-import";
@@ -45,6 +45,7 @@ export async function createSales(formData: FormData) {
   const { error } = await supabase.from("data_sales").insert(parsed);
   if (error) throw new Error(error.message);
 
+  revalidateTag("data-sales", "max");
   revalidatePath("/data-sales");
   redirect("/data-sales?created=1");
 }
@@ -62,6 +63,7 @@ export async function updateSales(formData: FormData) {
   const { error } = await supabase.from("data_sales").update(parsed).eq("id", id);
   if (error) throw new Error(error.message);
 
+  revalidateTag("data-sales", "max");
   revalidatePath("/data-sales");
   redirect("/data-sales?updated=1");
 }
@@ -75,6 +77,7 @@ export async function deleteSales(formData: FormData) {
   const { error } = await supabase.from("data_sales").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
+  revalidateTag("data-sales", "max");
   revalidatePath("/data-sales");
   redirect("/data-sales?deleted=1");
 }
@@ -124,6 +127,7 @@ export async function importSales(formData: FormData) {
     if (error) throw new Error(error.message);
   }
 
+  revalidateTag("data-sales", "max");
   revalidatePath("/data-sales");
   redirect("/data-sales?imported=1");
 }

@@ -1,26 +1,43 @@
+import { unstable_cache } from "next/cache";
 import { canViewAllBranches, getAssignedBranchIds, getConfiguredBranchIds } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Branch, Customer, Profile, ReportRow, Sales } from "@/lib/types";
 
+const getCachedBranches = unstable_cache(
+  async () => {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("branches")
+      .select("id, code, name")
+      .order("code");
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Branch[];
+  },
+  ["branches"],
+  { revalidate: 3600, tags: ["branches"] },
+);
+
+const getCachedSales = unstable_cache(
+  async () => {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("data_sales")
+      .select("id, sales_code, branch_id, sales_name, status, branches(id, code, name)")
+      .order("sales_name");
+    if (error) throw new Error(error.message);
+    return (data ?? []) as unknown as Sales[];
+  },
+  ["data-sales"],
+  { revalidate: 300, tags: ["data-sales"] },
+);
+
 export async function getBranches() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("branches")
-    .select("id, code, name")
-    .order("code");
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Branch[];
+  return getCachedBranches();
 }
 
 export async function getSales() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("data_sales")
-    .select("id, sales_code, branch_id, sales_name, status, branches(id, code, name)")
-    .order("sales_name");
-  if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Sales[];
+  return getCachedSales();
 }
 
 export async function getActiveSales(profile?: Profile) {
@@ -120,7 +137,7 @@ export async function getReports(
   profile: Profile,
   options: { limitAccountingToConfiguredBranches?: boolean } = {},
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   let query = supabase
     .from(table)
     .select("*, branches(id, code, name), profiles(full_name, email)")
@@ -141,32 +158,5 @@ export async function getReports(
 
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as ReportRow[];
-  const missingCreatorIds = Array.from(
-    new Set(rows.filter((row) => !row.profiles?.full_name).map((row) => row.created_by).filter(Boolean)),
-  );
-
-  if (!missingCreatorIds.length) return rows;
-
-  try {
-    const admin = createAdminClient();
-    const { data: creators, error: creatorError } = await admin
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", missingCreatorIds);
-    if (creatorError) throw creatorError;
-
-    const creatorMap = new Map(
-      (creators ?? []).map((creator) => [
-        creator.id,
-        { full_name: creator.full_name, email: creator.email },
-      ]),
-    );
-    return rows.map((row) => ({
-      ...row,
-      profiles: row.profiles?.full_name ? row.profiles : creatorMap.get(row.created_by) ?? row.profiles,
-    })) as ReportRow[];
-  } catch {
-    return rows;
-  }
+  return (data ?? []) as ReportRow[];
 }
