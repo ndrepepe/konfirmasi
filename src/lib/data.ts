@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
-import { canViewAllBranches, getAssignedBranchIds, getConfiguredBranchIds } from "@/lib/permissions";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { canAccessBranch, canViewAllBranches, getAssignedBranchIds } from "@/lib/permissions";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 import type { Branch, Customer, Profile, ReportRow, Sales } from "@/lib/types";
 
 const getCachedBranches = unstable_cache(
@@ -36,20 +36,17 @@ export async function getBranches() {
   return getCachedBranches();
 }
 
-export async function getSales() {
-  return getCachedSales();
+export async function getSales(profile?: Profile) {
+  const sales = await getCachedSales();
+  if (!profile || canViewAllBranches(profile)) return sales;
+
+  const branchIds = getAssignedBranchIds(profile);
+  return sales.filter((item) => !!item.branch_id && branchIds.includes(item.branch_id));
 }
 
 export async function getActiveSales(profile?: Profile) {
-  const sales = await getSales();
-  const assignedBranchIds = profile ? getAssignedBranchIds(profile) : [];
-  return sales.filter((item) => {
-    if (item.status !== "Aktif") return false;
-    if (profile && !canViewAllBranches(profile)) {
-      return !!item.branch_id && assignedBranchIds.includes(item.branch_id);
-    }
-    return true;
-  });
+  const sales = await getSales(profile);
+  return sales.filter((item) => item.status === "Aktif");
 }
 
 export async function getCustomers(
@@ -59,7 +56,6 @@ export async function getCustomers(
     status?: string;
     branchId?: string;
     limit?: number;
-    limitAccountingToConfiguredBranches?: boolean;
   } = {},
 ) {
   const supabase = await createClient();
@@ -78,17 +74,8 @@ export async function getCustomers(
       query = query.in("branch_id", branchIds);
     }
 
-    if (
-      profile.role === "accounting" &&
-      options.limitAccountingToConfiguredBranches &&
-      !options.branchId
-    ) {
-      const branchIds = getConfiguredBranchIds(profile);
-      if (!branchIds.length) return null;
-      query = query.in("branch_id", branchIds);
-    }
-
-    if (canViewAllBranches(profile) && options.branchId) {
+    if (options.branchId) {
+      if (!canAccessBranch(profile, options.branchId)) return null;
       query = query.eq("branch_id", options.branchId);
     }
 
@@ -135,7 +122,6 @@ export async function getActiveCustomers(profile: Profile) {
 export async function getReports(
   table: string,
   profile: Profile,
-  options: { limitAccountingToConfiguredBranches?: boolean } = {},
 ) {
   const supabase = createAdminClient();
   let query = supabase
@@ -147,13 +133,7 @@ export async function getReports(
   if (!canViewAllBranches(profile)) {
     const branchIds = getAssignedBranchIds(profile);
     if (!branchIds.length) return [];
-    query = query.in("branch_id", branchIds);
-  }
-
-  if (profile.role === "accounting" && options.limitAccountingToConfiguredBranches) {
-    const branchIds = getConfiguredBranchIds(profile);
-    if (!branchIds.length) return [];
-    query = query.in("branch_id", branchIds);
+    query = query.in("branch_id", branchIds).eq("created_by", profile.id);
   }
 
   const { data, error } = await query;

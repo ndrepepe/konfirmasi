@@ -1,7 +1,3 @@
-export function isSupabaseConfigured() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-      process.env.NEXT_PUBLIC_SUPABASE_URL.startsWith("https://"),
-  );
+export function isDatabaseConfigured() {
+  return Boolean(process.env.DATABASE_URL && process.env.SESSION_SECRET);
 }

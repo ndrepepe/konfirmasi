@@ -3,7 +3,7 @@ import { Guard } from "@/components/app-shell";
 import { SearchableSelect } from "@/components/searchable-select";
 import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 import type { Profile } from "@/lib/types";
 
 async function getUsers() {

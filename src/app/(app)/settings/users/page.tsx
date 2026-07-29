@@ -2,13 +2,14 @@ import Link from "next/link";
 import { createUser, deleteUser, updateUser } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
 import { MultiBranchSelect } from "@/components/multi-branch-select";
+import { PageSubnav, type PageView } from "@/components/page-subnav";
 import { SearchableTable } from "@/components/searchable-table";
 import { SearchableSelect } from "@/components/searchable-select";
-import { Input, InputDataLayout, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches } from "@/lib/data";
 import { roleLabels, roleOptions } from "@/lib/permissions";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
 import type { Branch, Profile } from "@/lib/types";
 
 function normalizeBranch(value: Branch | Branch[] | null | undefined) {
@@ -28,13 +29,13 @@ async function getUsers() {
     .select("profile_id, branch_id, branches(id, code, name)");
 
   const branchMap = new Map<string, Array<{ branch_id: string; branches: Profile["branches"] }>>();
-  (profileBranches ?? []).forEach((item) => {
+  (profileBranches ?? []).forEach((item: { profile_id: string; branch_id: string; branches?: Branch | null }) => {
     const existing = branchMap.get(item.profile_id) ?? [];
     existing.push({ branch_id: item.branch_id, branches: normalizeBranch(item.branches) });
     branchMap.set(item.profile_id, existing);
   });
 
-  return (data ?? []).map((user) => {
+  const users: Profile[] = (data ?? []).map((user: Profile) => {
     const profile = user as unknown as Profile;
     const userBranches = branchMap.get(profile.id) ?? [];
 
@@ -55,17 +56,19 @@ async function getUsers() {
           : [],
     };
   });
+  return users;
 }
 
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; error?: string }>;
+  searchParams: Promise<{ edit?: string; error?: string; view?: PageView }>;
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
   const [branches, users] = await Promise.all([getBranches(), getUsers()]);
   const editingUser = users.find((user) => user.id === params.edit);
+  const activeView = params.edit ? "input" : params.view === "data" ? "data" : "input";
 
   return (
     <Guard profile={profile} href="/settings/users">
@@ -73,7 +76,9 @@ export default async function UsersPage({
         title="Seting User"
         description="Buat user baru, tentukan role, dan kaitkan admin cabang ke cabang masing-masing."
       />
-      <InputDataLayout>
+      <PageSubnav baseHref="/settings/users" activeView={activeView} />
+      <div className="grid gap-5">
+        {activeView === "input" ? (
         <Panel title={editingUser ? "Edit User" : "Tambah User"} className="flex min-h-0 flex-col">
           {params.error ? (
             <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -116,7 +121,7 @@ export default async function UsersPage({
               <SubmitButton>{editingUser ? "Update User" : "Buat User"}</SubmitButton>
               {editingUser ? (
                 <Link
-                  href="/settings/users"
+                  href="/settings/users?view=input"
                   className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:h-10"
                 >
                   Batal
@@ -125,11 +130,12 @@ export default async function UsersPage({
             </div>
           </form>
         </Panel>
+        ) : (
         <Panel title="Daftar User" className="flex min-h-0 flex-col">
           <SearchableTable
             rows={users.map((user) => ({
               id: user.id,
-              editHref: `/settings/users?edit=${user.id}`,
+              editHref: `/settings/users?view=input&edit=${user.id}`,
               deleteLabel: `user ${user.full_name}`,
               cells: {
                 full_name: user.full_name,
@@ -150,7 +156,8 @@ export default async function UsersPage({
             deleteAction={profile.role === "super_user" ? deleteUser : undefined}
           />
         </Panel>
-      </InputDataLayout>
+        )}
+      </div>
     </Guard>
   );
 }

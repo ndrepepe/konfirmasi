@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Guard } from "@/components/app-shell";
 import {
   AttachmentList,
@@ -8,21 +8,23 @@ import {
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { formatDateOnly, formatDateTimeWib } from "@/lib/date-time";
-import { createClient } from "@/lib/database/server";
+import { createAdminClient } from "@/lib/database/admin";
 import { getAssignedBranchIds } from "@/lib/permissions";
 import { getAttachmentLinks } from "@/lib/storage";
 import type { ReportRow } from "@/lib/types";
 
-export default async function PemenuhanPoDetailPage({
+export default async function CustomerBaruDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const profile = await requireProfile();
+  if (profile.role === "admin_cabang") redirect("/dashboard");
+
   const { id } = await params;
-  const supabase = await createClient();
-  let query = supabase
-    .from("pemenuhan_po_reports")
+  const admin = createAdminClient();
+  let query = admin
+    .from("customer_baru_reports")
     .select("*, branches(id, code, name), profiles(full_name, email)")
     .eq("id", id);
   if (profile.role !== "super_user") {
@@ -36,25 +38,22 @@ export default async function PemenuhanPoDetailPage({
   if (!data) notFound();
 
   const row = data as ReportRow;
-  const [poFiles, confirmationFiles] = await Promise.all([
-    getAttachmentLinks(row.po_file),
-    getAttachmentLinks(row.confirmation_file),
-  ]);
+  const confirmationFiles = await getAttachmentLinks(row.confirmation_file);
 
   return (
-    <Guard profile={profile} href="/pemenuhan-po">
+    <Guard profile={profile} href="/customer-baru">
       <PageHeader
-        title="Detail Pemenuhan PO"
-        description="Detail lengkap data Pemenuhan PO dan file lampiran."
+        title="Detail Customer Baru"
+        description="Detail lengkap laporan customer baru dan bukti konfirmasi."
       />
       <div className="grid gap-5">
-        <Panel title="Data Pemenuhan PO">
+        <Panel title="Data Customer Baru">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <DetailField label="Cabang" value={row.branches?.name ?? row.branches?.code} />
-            <DetailField label="Nama Customer" value={String(row.customer_name ?? "")} />
-            <DetailField label="Nama Sales" value={String(row.sales_name ?? "")} />
-            <DetailField label="Tanggal PO" value={formatDateOnly(row.po_date)} />
-            <DetailField label="No PO" value={String(row.po_number ?? "")} />
+            <DetailField label="Customer Baru" value={String(row.customer_new ?? "")} />
+            <DetailField label="Sales" value={String(row.sales_requester ?? "")} />
+            <DetailField label="Tanggal Input Bsoft" value={formatDateOnly(row.bsoft_input_date)} />
+            <DetailField label="ID Customer" value={String(row.customer_id ?? "")} />
             <DetailField label="Contact Person" value={String(row.contact_person ?? "")} />
             <DetailField label="No HP" value={String(row.phone ?? "")} />
             <DetailField label="Input Oleh" value={row.profiles?.full_name ?? "-"} />
@@ -65,13 +64,10 @@ export default async function PemenuhanPoDetailPage({
           </div>
         </Panel>
         <Panel title="Lampiran">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <AttachmentList title="File PO" files={poFiles} />
-            <AttachmentList title="Bukti Konfirmasi" files={confirmationFiles} />
-          </div>
+          <AttachmentList title="Bukti Konfirmasi" files={confirmationFiles} />
         </Panel>
         <div>
-          <BackToReport href="/pemenuhan-po?view=data" />
+          <BackToReport href="/customer-baru?view=data" />
         </div>
       </div>
     </Guard>

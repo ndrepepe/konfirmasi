@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createBranch, deleteBranch, importBranches, updateBranch } from "@/app/actions/settings";
 import { Guard } from "@/components/app-shell";
+import { PageSubnav, type PageView } from "@/components/page-subnav";
 import { SearchableTable } from "@/components/searchable-table";
 import {
-  CompactInputDataLayout,
   FileInput,
   Input,
   PageHeader,
@@ -16,12 +16,13 @@ import { getBranches } from "@/lib/data";
 export default async function BranchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; view?: PageView }>;
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
   const branches = await getBranches();
   const editingBranch = branches.find((branch) => branch.id === params.edit);
+  const activeView = params.edit ? "input" : params.view === "data" ? "data" : "input";
 
   return (
     <Guard profile={profile} href="/settings/branches">
@@ -29,8 +30,9 @@ export default async function BranchesPage({
         title="Data Cabang"
         description="Lihat data cabang. Penambahan cabang hanya tersedia untuk super user."
       />
-      <CompactInputDataLayout>
-        {profile.role === "super_user" ? (
+      <PageSubnav baseHref="/settings/branches" activeView={activeView} />
+      <div className="grid gap-5">
+        {activeView === "input" ? (
           <Panel title={editingBranch ? "Edit Cabang" : "Tambah Cabang"} className="flex min-h-0 flex-col">
             <form action={editingBranch ? updateBranch : createBranch} className="grid gap-4">
               {editingBranch ? <input type="hidden" name="id" value={editingBranch.id} /> : null}
@@ -40,7 +42,7 @@ export default async function BranchesPage({
                 <SubmitButton>{editingBranch ? "Update" : "Simpan"}</SubmitButton>
                 {editingBranch ? (
                   <Link
-                    href="/settings/branches"
+                    href="/settings/branches?view=input"
                     className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:h-10"
                   >
                     Batal
@@ -61,12 +63,15 @@ export default async function BranchesPage({
               </form>
             </div>
           </Panel>
-        ) : null}
+        ) : (
         <Panel title="Daftar Cabang" className="flex min-h-0 flex-col">
           <SearchableTable
             rows={branches.map((branch) => ({
               id: branch.id,
-              editHref: profile.role === "super_user" ? `/settings/branches?edit=${branch.id}` : undefined,
+              editHref:
+                profile.role === "super_user"
+                  ? `/settings/branches?view=input&edit=${branch.id}`
+                  : undefined,
               deleteLabel: `cabang ${branch.name}`,
               cells: {
                 code: branch.code,
@@ -81,7 +86,8 @@ export default async function BranchesPage({
             deleteAction={profile.role === "super_user" ? deleteBranch : undefined}
           />
         </Panel>
-      </CompactInputDataLayout>
+        )}
+      </div>
     </Guard>
   );
 }

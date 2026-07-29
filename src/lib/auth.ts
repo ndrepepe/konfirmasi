@@ -1,8 +1,8 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { isSupabaseConfigured } from "@/lib/config";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { isDatabaseConfigured } from "@/lib/config";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 import type { Branch, Profile } from "@/lib/types";
 
 type ProfileRow = Omit<Profile, "branches" | "branch_ids" | "assigned_branches">;
@@ -31,7 +31,7 @@ async function readProfileBranchIds(
     .eq("profile_id", userId);
 
   if (error) return [];
-  return (data ?? []).map((item) => item.branch_id).filter(Boolean);
+  return (data ?? []).map((item: { branch_id: string }) => item.branch_id).filter(Boolean);
 }
 
 async function readBranch(
@@ -50,7 +50,7 @@ async function readBranch(
 }
 
 export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
-  if (!isSupabaseConfigured()) return null;
+  if (!isDatabaseConfigured()) return null;
 
   try {
     const supabase = await createClient();

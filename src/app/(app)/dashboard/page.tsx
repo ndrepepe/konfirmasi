@@ -2,16 +2,18 @@ import { Suspense } from "react";
 import { DashboardSkeleton } from "@/components/loading-panels";
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
-import { getConfiguredBranchIds, roleLabels } from "@/lib/permissions";
+import { canViewAllBranches, getConfiguredBranchIds, roleLabels } from "@/lib/permissions";
 import { getBranches } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/database/server";
+import type { Profile } from "@/lib/types";
 
-async function countRows(table: string, branchIds: string[], all: boolean) {
+async function countRows(table: string, profile: Profile) {
   const supabase = await createClient();
   let query = supabase.from(table).select("id", { count: "exact", head: true });
-  if (!all) {
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getConfiguredBranchIds(profile);
     if (!branchIds.length) return 0;
-    query = query.in("branch_id", branchIds);
+    query = query.in("branch_id", branchIds).eq("created_by", profile.id);
   }
   const { count, error } = await query;
   if (error) return 0;
@@ -20,13 +22,13 @@ async function countRows(table: string, branchIds: string[], all: boolean) {
 
 async function DashboardContent() {
   const profile = await requireProfile();
-  const all = profile.role === "super_user";
+  const all = canViewAllBranches(profile);
   const branchIds = all ? [] : getConfiguredBranchIds(profile);
   const [branches, customers, pos, billings] = await Promise.all([
     getBranches(),
-    profile.role === "admin_cabang" ? 0 : countRows("customer_baru_reports", branchIds, all),
-    countRows("pemenuhan_po_reports", branchIds, all),
-    profile.role === "admin_cabang" ? 0 : countRows("penagihan_reports", branchIds, all),
+    profile.role === "admin_cabang" ? 0 : countRows("customer_baru_reports", profile),
+    countRows("pemenuhan_po_reports", profile),
+    profile.role === "admin_cabang" ? 0 : countRows("penagihan_reports", profile),
   ]);
   const branchLabel = all
     ? "Semua cabang"

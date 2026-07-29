@@ -1,13 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { isSupabaseConfigured } from "@/lib/config";
+import { isDatabaseConfigured } from "@/lib/config";
 import { requireProfile } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 
 export async function signIn(formData: FormData) {
-  if (!isSupabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     redirect(
       `/login?error=${encodeURIComponent("Login belum tersedia. Hubungi administrator aplikasi.")}`,
     );

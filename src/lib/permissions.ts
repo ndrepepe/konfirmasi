@@ -12,8 +12,13 @@ export const roleOptions: Array<{ value: UserRole; label: string }> = [
   { value: "admin_cabang", label: roleLabels.admin_cabang },
 ];
 
+export function canViewInputRecap(profile: Profile) {
+  return profile.role === "super_user";
+}
+
 export function canAccessMenu(profile: Profile, href: string) {
   if (href === "/change-password") return true;
+  if (href === "/rekap-input") return canViewInputRecap(profile);
   if (profile.role === "super_user") return true;
   if (profile.role === "accounting") {
     return href !== "/settings/users" && href !== "/settings/branches";
@@ -26,7 +31,7 @@ export function canManageSettings(profile: Profile) {
 }
 
 export function canViewAllBranches(profile: Profile) {
-  return profile.role === "super_user" || profile.role === "accounting";
+  return profile.role === "super_user";
 }
 
 export function getConfiguredBranchIds(profile: Profile) {
@@ -48,5 +53,5 @@ export function canAccessBranch(profile: Profile, branchId: string) {
 }
 
 export function canUseConfiguredBranch(profile: Profile, branchId: string) {
-  return profile.role !== "accounting" || getConfiguredBranchIds(profile).includes(branchId);
+  return profile.role === "super_user" || getConfiguredBranchIds(profile).includes(branchId);
 }

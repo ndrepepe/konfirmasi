@@ -1,5 +1,6 @@
 import {
   Building2,
+  ClipboardList,
   FileCheck2,
   FileText,
   KeyRound,
@@ -14,6 +15,7 @@ export const navItems = [
   { href: "/customer-baru", label: "Customer Baru", icon: FileText },
   { href: "/pemenuhan-po", label: "Pemenuhan PO", icon: FileCheck2 },
   { href: "/penagihan", label: "Penagihan", icon: ReceiptText },
+  { href: "/rekap-input", label: "Rekap Input Harian", icon: ClipboardList },
   { href: "/data-sales", label: "Data Sales", icon: UserRound },
   { href: "/data-customer", label: "Data Customer", icon: FileText },
   { href: "/settings/branches", label: "Data Cabang", icon: Building2 },

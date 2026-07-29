@@ -8,14 +8,15 @@ import {
 import { Guard } from "@/components/app-shell";
 import { BranchSelect } from "@/components/branch-select";
 import { CustomerExcelImporter } from "@/components/customer-excel-importer";
-import { InputDataSkeleton } from "@/components/loading-panels";
+import { DataPanelSkeleton, FormPanelSkeleton } from "@/components/loading-panels";
+import { PageSubnav, type PageView } from "@/components/page-subnav";
 import { SearchableTable } from "@/components/searchable-table";
 import { SearchableSelect } from "@/components/searchable-select";
 import { StatusSelect } from "@/components/status-select";
-import { CompactInputDataLayout, Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
+import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
 import { getBranches, getCustomers } from "@/lib/data";
-import { canViewAllBranches, getConfiguredBranchIds } from "@/lib/permissions";
+import { getConfiguredBranchIds } from "@/lib/permissions";
 
 export default async function DataCustomerPage({
   searchParams,
@@ -25,11 +26,14 @@ export default async function DataCustomerPage({
     branch_id?: string;
     status?: string;
     edit?: string;
+    error?: string;
+    view?: PageView;
   }>;
 }) {
   const profile = await requireProfile();
   const params = await searchParams;
   const suspenseKey = JSON.stringify(params);
+  const activeView = params.edit ? "input" : params.view === "data" ? "data" : "input";
 
   return (
     <Guard profile={profile} href="/data-customer">
@@ -37,9 +41,19 @@ export default async function DataCustomerPage({
         title="Data Customer"
         description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
       />
+      <PageSubnav
+        baseHref="/data-customer"
+        activeView={activeView}
+      />
       <Suspense
         key={suspenseKey}
-        fallback={<InputDataSkeleton formTitle="Tambah Customer" dataTitle="Daftar Customer" compact />}
+        fallback={
+          activeView === "input" ? (
+            <FormPanelSkeleton title="Tambah Customer" />
+          ) : (
+            <DataPanelSkeleton title="Daftar Customer" />
+          )
+        }
       >
         <DataCustomerContent profile={profile} params={params} />
       </Suspense>
@@ -57,6 +71,8 @@ async function DataCustomerContent({
     branch_id?: string;
     status?: string;
     edit?: string;
+    error?: string;
+    view?: PageView;
   };
 }) {
   const [branches, customers] = await Promise.all([
@@ -66,27 +82,34 @@ async function DataCustomerContent({
       branchId: params.branch_id,
       status: params.status,
       limit: 500,
-      limitAccountingToConfiguredBranches: true,
     }),
   ]);
   const editingCustomer = customers.find((customer) => customer.id === params.edit);
   const configuredBranchIds = getConfiguredBranchIds(profile);
   const inputBranches =
-    profile.role === "accounting"
-      ? branches.filter((branch) => configuredBranchIds.includes(branch.id))
-      : branches;
+    profile.role === "super_user"
+      ? branches
+      : branches.filter((branch) => configuredBranchIds.includes(branch.id));
   const editHrefFor = (id: string) => {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
     if (params.branch_id) query.set("branch_id", params.branch_id);
     if (params.status) query.set("status", params.status);
+    query.set("view", "input");
     query.set("edit", id);
     return `/data-customer?${query.toString()}`;
   };
+  const activeView = params.edit ? "input" : params.view === "data" ? "data" : "input";
 
   return (
-    <CompactInputDataLayout>
+    <div className="grid gap-5">
+      {activeView === "input" ? (
         <Panel title={editingCustomer ? "Edit Customer" : "Tambah Customer"} className="flex min-h-0 flex-col">
+          {params.error ? (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {params.error}
+            </div>
+          ) : null}
           <form action={editingCustomer ? updateCustomerData : createCustomerData} className="grid gap-4">
             {editingCustomer ? <input type="hidden" name="id" value={editingCustomer.id} /> : null}
             <Input label="ID Customer" name="customer_code" defaultValue={editingCustomer?.customer_code} />
@@ -94,7 +117,7 @@ async function DataCustomerContent({
               branches={branches}
               profile={profile}
               defaultValue={editingCustomer?.branch_id}
-              limitToAssigned={profile.role === "accounting"}
+              limitToAssigned={profile.role !== "super_user"}
             />
             <Input label="Nama Customer" name="customer_name" defaultValue={editingCustomer?.customer_name} />
             <StatusSelect defaultValue={editingCustomer?.status ?? "Aktif"} />
@@ -102,7 +125,7 @@ async function DataCustomerContent({
               <SubmitButton>{editingCustomer ? "Update" : "Simpan"}</SubmitButton>
               {editingCustomer ? (
                 <Link
-                  href="/data-customer"
+                  href="/data-customer?view=input"
                   className="inline-flex h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:h-10"
                 >
                   Batal
@@ -112,11 +135,13 @@ async function DataCustomerContent({
           </form>
           <CustomerExcelImporter branches={branches} />
         </Panel>
+      ) : (
         <Panel title="Daftar Customer" className="flex min-h-0 flex-col">
           <p className="mb-3 text-xs text-slate-500">
             Data ditampilkan maksimal 500 baris per hasil pencarian/filter.
           </p>
           <form className="mb-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 lg:grid-cols-[1fr_180px_160px_auto]">
+            <input type="hidden" name="view" value="data" />
             <label className="grid gap-1 text-xs font-medium text-slate-600">
               Cari
               <input
@@ -126,7 +151,7 @@ async function DataCustomerContent({
                 className="h-11 rounded-md border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
               />
             </label>
-            {canViewAllBranches(profile) ? (
+            {profile.role === "super_user" || inputBranches.length > 1 ? (
               <SearchableSelect
                 label="Cabang"
                 name="branch_id"
@@ -178,6 +203,7 @@ async function DataCustomerContent({
             deleteAction={profile.role === "super_user" ? deleteCustomerData : undefined}
           />
         </Panel>
-    </CompactInputDataLayout>
+      )}
+    </div>
   );
 }

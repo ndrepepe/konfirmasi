@@ -5,13 +5,31 @@ import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { readExcelRows } from "@/lib/excel-import";
 import { canManageSettings } from "@/lib/permissions";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 import { branchSchema, userSchema, userUpdateSchema } from "@/lib/validators";
 
 function redirectWithSettingsError(message: string): never {
-  const params = new URLSearchParams({ error: message });
+  const params = new URLSearchParams({ view: "input", error: message });
   redirect(`/settings/users?${params.toString()}`);
+}
+
+function isNextRedirectError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    String((error as { digest?: unknown }).digest).startsWith("NEXT_REDIRECT")
+  );
+}
+
+function messageFromError(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) return fallback;
+  const message = error.message;
+  if (message.toLowerCase().includes("duplicate key") || message.toLowerCase().includes("unique constraint")) {
+    return "Email user sudah terdaftar.";
+  }
+  return message || fallback;
 }
 
 async function requireSuperUser() {
@@ -45,7 +63,7 @@ async function syncUserBranches(
     if (isMissingProfileBranchesError(deleteError.message) && branchIds.length <= 1) return;
     throw new Error(
       isMissingProfileBranchesError(deleteError.message)
-        ? "Tabel akses cabang belum tersedia. Jalankan SQL migrasi profile_branches di Supabase."
+        ? "Tabel akses cabang belum tersedia. Jalankan skema database aplikasi."
         : deleteError.message,
     );
   }
@@ -62,7 +80,7 @@ async function syncUserBranches(
     if (isMissingProfileBranchesError(insertError.message) && branchIds.length <= 1) return;
     throw new Error(
       isMissingProfileBranchesError(insertError.message)
-        ? "Tabel akses cabang belum tersedia. Jalankan SQL migrasi profile_branches di Supabase."
+        ? "Tabel akses cabang belum tersedia. Jalankan skema database aplikasi."
         : insertError.message,
     );
   }
@@ -77,7 +95,7 @@ export async function createBranch(formData: FormData) {
   revalidateTag("branches", "max");
   revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
-  redirect("/settings/branches?created=1");
+  redirect("/settings/branches?view=data&created=1");
 }
 
 export async function updateBranch(formData: FormData) {
@@ -91,7 +109,7 @@ export async function updateBranch(formData: FormData) {
   revalidateTag("branches", "max");
   revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
-  redirect("/settings/branches?updated=1");
+  redirect("/settings/branches?view=data&updated=1");
 }
 
 export async function deleteBranch(formData: FormData) {
@@ -105,7 +123,7 @@ export async function deleteBranch(formData: FormData) {
   revalidateTag("branches", "max");
   revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
-  redirect("/settings/branches?deleted=1");
+  redirect("/settings/branches?view=data&deleted=1");
 }
 
 export async function importBranches(formData: FormData) {
@@ -133,75 +151,83 @@ export async function importBranches(formData: FormData) {
   revalidateTag("branches", "max");
   revalidateTag("data-sales", "max");
   revalidatePath("/settings/branches");
-  redirect("/settings/branches?imported=1");
+  redirect("/settings/branches?view=data&imported=1");
 }
 
 export async function createUser(formData: FormData) {
-  await requireSuperUser();
-  const parsedResult = userSchema.safeParse(Object.fromEntries(formData));
-  if (!parsedResult.success) {
-    redirectWithSettingsError(parsedResult.error.issues[0]?.message ?? "Data user tidak valid.");
-  }
-
-  const parsed = parsedResult.data;
-  const branchIds = branchIdsFromForm(formData);
-  const primaryBranchId = branchIds[0] ?? "";
-  if (parsed.role === "admin_cabang" && !primaryBranchId) {
-    redirectWithSettingsError("Admin cabang wajib memiliki cabang.");
-  }
-
-  let admin: ReturnType<typeof createAdminClient>;
   try {
-    admin = createAdminClient();
-  } catch (error) {
-    redirectWithSettingsError(error instanceof Error ? error.message : "Gagal membuat user.");
-  }
-
-  let userId = "";
-  let createErrorMessage = "";
-  try {
-    const { data, error } = await admin.auth.admin.createUser({
-      email: parsed.email,
-      password: parsed.password,
-      email_confirm: true,
-      user_metadata: { full_name: parsed.full_name },
-    });
-
-    if (error || !data.user) {
-      createErrorMessage = error?.message?.toLowerCase().includes("already")
-        ? "Email user sudah terdaftar."
-        : (error?.message ?? "Gagal membuat user.");
-    } else {
-      userId = data.user.id;
+    await requireSuperUser();
+    const parsedResult = userSchema.safeParse(Object.fromEntries(formData));
+    if (!parsedResult.success) {
+      redirectWithSettingsError(parsedResult.error.issues[0]?.message ?? "Data user tidak valid.");
     }
-  } catch (error) {
-    createErrorMessage = error instanceof Error ? error.message : "Gagal membuat user.";
-  }
-  if (createErrorMessage) redirectWithSettingsError(createErrorMessage);
-  if (!userId) redirectWithSettingsError("Gagal membuat user.");
 
-  let profileErrorMessage = "";
-  try {
-    const { error: profileError } = await admin.from("profiles").upsert(
-      {
-        id: userId,
-        full_name: parsed.full_name,
+    const parsed = parsedResult.data;
+    const branchIds = branchIdsFromForm(formData);
+    const primaryBranchId = branchIds[0] ?? "";
+    if (parsed.role === "admin_cabang" && !primaryBranchId) {
+      redirectWithSettingsError("Admin cabang wajib memiliki cabang.");
+    }
+
+    let admin: ReturnType<typeof createAdminClient>;
+    try {
+      admin = createAdminClient();
+    } catch (error) {
+      redirectWithSettingsError(messageFromError(error, "Gagal membuat user."));
+    }
+
+    let userId = "";
+    let createErrorMessage = "";
+    try {
+      const { data, error } = await admin.auth.admin.createUser({
         email: parsed.email,
-        role: parsed.role,
-        branch_id: primaryBranchId || null,
-      },
-      { onConflict: "id" },
-    );
+        password: parsed.password,
+        email_confirm: true,
+        user_metadata: { full_name: parsed.full_name },
+      });
 
-    if (profileError) profileErrorMessage = profileError.message;
-    await syncUserBranches(admin, userId, branchIds);
+      if (error || !data.user) {
+        createErrorMessage = error?.message?.toLowerCase().includes("already")
+          ? "Email user sudah terdaftar."
+          : messageFromError(error ? new Error(error.message) : null, "Gagal membuat user.");
+      } else {
+        userId = data.user.id;
+      }
+    } catch (error) {
+      createErrorMessage = messageFromError(error, "Gagal membuat user.");
+    }
+    if (createErrorMessage) redirectWithSettingsError(createErrorMessage);
+    if (!userId) redirectWithSettingsError("Gagal membuat user.");
+
+    let profileErrorMessage = "";
+    try {
+      const { error: profileError } = await admin.from("profiles").upsert(
+        {
+          id: userId,
+          full_name: parsed.full_name,
+          email: parsed.email,
+          role: parsed.role,
+          branch_id: primaryBranchId || null,
+        },
+        { onConflict: "id" },
+      );
+
+      if (profileError) profileErrorMessage = profileError.message;
+      await syncUserBranches(admin, userId, branchIds);
+    } catch (error) {
+      profileErrorMessage = messageFromError(error, "Gagal membuat user.");
+    }
+    if (profileErrorMessage) {
+      await admin.auth.admin.deleteUser(userId);
+      redirectWithSettingsError(profileErrorMessage);
+    }
+
+    revalidatePath("/settings/users");
+    redirect("/settings/users?view=data&created=1");
   } catch (error) {
-    profileErrorMessage = error instanceof Error ? error.message : "Gagal membuat user.";
+    if (isNextRedirectError(error)) throw error;
+    redirectWithSettingsError(messageFromError(error, "Gagal membuat user."));
   }
-  if (profileErrorMessage) redirectWithSettingsError(profileErrorMessage);
-
-  revalidatePath("/settings/users");
-  redirect("/settings/users?created=1");
 }
 
 export async function updateUser(formData: FormData) {
@@ -252,7 +278,7 @@ export async function updateUser(formData: FormData) {
   }
 
   revalidatePath("/settings/users");
-  redirect("/settings/users?updated=1");
+  redirect("/settings/users?view=data&updated=1");
 }
 
 export async function deleteUser(formData: FormData) {
@@ -268,5 +294,5 @@ export async function deleteUser(formData: FormData) {
   const { error } = await admin.from("profiles").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/settings/users");
-  redirect("/settings/users?deleted=1");
+  redirect("/settings/users?view=data&deleted=1");
 }

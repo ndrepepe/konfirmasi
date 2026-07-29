@@ -9,8 +9,8 @@ import {
   canViewAllBranches,
   getAssignedBranchIds,
 } from "@/lib/permissions";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/database/admin";
+import { createClient } from "@/lib/database/server";
 import { uploadAttachments } from "@/lib/storage";
 import {
   customerBaruSchema,
@@ -37,7 +37,7 @@ async function deleteReportRow(formData: FormData, table: string, path: string) 
   const { error } = await admin.from(table).delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath(path);
-  redirect(`${path}?deleted=1`);
+  redirect(`${path}?view=data&deleted=1`);
 }
 
 export async function createCustomerBaru(formData: FormData) {
@@ -75,7 +75,7 @@ export async function createCustomerBaru(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/customer-baru");
   revalidatePath("/data-customer");
-  redirect("/customer-baru?created=1");
+  redirect("/customer-baru?view=data&created=1");
 }
 
 export async function updateCustomerBaru(formData: FormData) {
@@ -108,11 +108,17 @@ export async function updateCustomerBaru(formData: FormData) {
   );
   if (customerError) throw new Error(customerError.message);
 
-  const { error } = await admin.from("customer_baru_reports").update(updatePayload).eq("id", id);
+  let query = admin.from("customer_baru_reports").update(updatePayload).eq("id", id);
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getAssignedBranchIds(profile);
+    if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
+    query = query.eq("created_by", profile.id).in("branch_id", branchIds);
+  }
+  const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/customer-baru");
   revalidatePath("/data-customer");
-  redirect("/customer-baru?updated=1");
+  redirect("/customer-baru?view=data&updated=1");
 }
 
 export async function deleteCustomerBaru(formData: FormData) {
@@ -145,7 +151,7 @@ export async function createPemenuhanPo(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/pemenuhan-po");
-  redirect("/pemenuhan-po?created=1");
+  redirect("/pemenuhan-po?view=data&created=1");
 }
 
 export async function updatePemenuhanPo(formData: FormData) {
@@ -174,12 +180,12 @@ export async function updatePemenuhanPo(formData: FormData) {
   if (!canViewAllBranches(profile)) {
     const branchIds = getAssignedBranchIds(profile);
     if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
-    query = query.in("branch_id", branchIds);
+    query = query.eq("created_by", profile.id).in("branch_id", branchIds);
   }
   const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/pemenuhan-po");
-  redirect("/pemenuhan-po?updated=1");
+  redirect("/pemenuhan-po?view=data&updated=1");
 }
 
 export async function deletePemenuhanPo(formData: FormData) {
@@ -205,7 +211,7 @@ export async function createPenagihan(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/penagihan");
-  redirect("/penagihan?created=1");
+  redirect("/penagihan?view=data&created=1");
 }
 
 export async function updatePenagihan(formData: FormData) {
@@ -223,10 +229,16 @@ export async function updatePenagihan(formData: FormData) {
   const updatePayload: Record<string, unknown> = { ...parsed };
   if (proof.length) updatePayload.proof_file = proof;
 
-  const { error } = await admin.from("penagihan_reports").update(updatePayload).eq("id", id);
+  let query = admin.from("penagihan_reports").update(updatePayload).eq("id", id);
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getAssignedBranchIds(profile);
+    if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
+    query = query.eq("created_by", profile.id).in("branch_id", branchIds);
+  }
+  const { error } = await query;
   if (error) throw new Error(error.message);
   revalidatePath("/penagihan");
-  redirect("/penagihan?updated=1");
+  redirect("/penagihan?view=data&updated=1");
 }
 
 export async function deletePenagihan(formData: FormData) {

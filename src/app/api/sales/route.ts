@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireProfile } from "@/lib/auth";
 import { canAccessBranch, canUseConfiguredBranch } from "@/lib/permissions";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "@/lib/database/admin";
 
 export async function GET(request: Request) {
   const profile = await requireProfile();

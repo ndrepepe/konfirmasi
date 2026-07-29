@@ -1,52 +1,45 @@
-# Aplikasi Konfirmasi Prosedur
+# Konfirmasi
 
-Aplikasi web Next.js untuk pelaporan prosedur konfirmasi cabang dengan Supabase Auth, database Supabase, role-based access, dan upload lampiran ke Backblaze B2 via S3 compatible API.
+Aplikasi Next.js untuk pelaporan prosedur konfirmasi cabang, dengan PostgreSQL untuk data dan akun serta penyimpanan lampiran lokal atau Backblaze B2.
 
 ## Fitur
 
-- Login email dan password memakai Supabase Auth.
-- Role: `super_user`, `accounting`, dan `admin_cabang`.
-- Super user mengakses semua menu, termasuk Seting User dan Data Cabang.
-- Accounting mengakses semua data cabang dan semua menu laporan.
-- Admin cabang hanya mengakses Pemenuhan PO untuk cabangnya sendiri.
-- Modul laporan: Customer Baru, Pemenuhan PO, Penagihan.
-- Lampiran disimpan ke Backblaze B2, bukan ke browser/client.
+- Role `super_user`, `accounting`, dan `admin_cabang`.
+- Modul Customer Baru, Pemenuhan PO, dan Penagihan.
+- Rekap input harian untuk Super User.
+- Data Sales, Customer, Cabang, dan pengaturan user.
+- Import Excel untuk data master.
+- Lampiran gambar, PDF, Word, dan Excel.
+- Accounting dan Admin Cabang dibatasi pada laporan milik sendiri di cabang yang ditugaskan.
+- Super User dapat mengakses seluruh data dan cabang.
 
-## Setup
+## Menjalankan Aplikasi
 
-1. Buat project Supabase.
-2. Jalankan SQL di `supabase/schema.sql` melalui Supabase SQL Editor.
-3. Isi `.env.local`:
+1. Salin `.env.example` menjadi `.env.production`.
+2. Isi `DATABASE_URL` dan `SESSION_SECRET`.
+3. Pilih penyimpanan lampiran:
+   - `FILE_STORAGE_DRIVER=local` dan isi `FILE_STORAGE_PATH`; atau
+   - isi kredensial Backblaze B2.
+4. Terapkan skema dan jalankan aplikasi:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-BACKBLAZE_ENDPOINT=https://s3.us-west-004.backblazeb2.com
-BACKBLAZE_REGION=us-west-004
-BACKBLAZE_BUCKET=
-BACKBLAZE_KEY_ID=
-BACKBLAZE_APPLICATION_KEY=
+psql "$DATABASE_URL" -f database/schema.sql
+npm install
+npm run build
+npm start
 ```
 
-4. Buat user pertama di Supabase Auth, lalu masukkan profile super user pertama via SQL:
-
-```sql
-insert into public.profiles (id, full_name, email, role, branch_id)
-values ('AUTH_USER_ID', 'Nama Super User', 'email@domain.com', 'super_user', null);
-```
-
-5. Jalankan aplikasi:
+Untuk pengembangan:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Buka `http://localhost:3000`.
+## Migrasi dan Server
 
-## Catatan Backblaze
+- `scripts/migrate-from-supabase.sh` memigrasikan akun dan data lama dari Supabase.
+- `scripts/server-setup.sh` membantu menyiapkan PostgreSQL dan service systemd di Ubuntu.
+- `scripts/update-backblaze.sh` memperbarui konfigurasi Backblaze secara interaktif.
 
-Gunakan bucket private. Aplikasi menyimpan metadata file ke Supabase dalam bentuk JSON berisi key, nama file, tipe file, dan ukuran. File upload diproses di server action agar credential Backblaze tidak dikirim ke browser.
-
-Key Backblaze yang pernah dibagikan di chat sebaiknya di-rotate sebelum production.
+File `.env.production`, database, hasil build, dan direktori lampiran tidak boleh dimasukkan ke Git.

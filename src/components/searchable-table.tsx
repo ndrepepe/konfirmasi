@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "@/components/delete-button";
@@ -157,9 +157,10 @@ export function SearchableTable({
                         {row.viewHref ? (
                           <Link
                             href={row.viewHref}
-                            className="inline-flex h-9 items-center rounded-md border border-teal-200 bg-white px-3 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+                            className="inline-flex h-9 items-center gap-2 rounded-md border border-teal-200 bg-white px-3 text-sm font-semibold text-teal-700 hover:bg-teal-50"
                           >
-                            Lihat Data
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                            Lihat
                           </Link>
                         ) : null}
                         {row.editHref ? (
