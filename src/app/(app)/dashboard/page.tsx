@@ -8,6 +8,8 @@ import { createClient } from "@/lib/database/server";
 import {
   formatBytes,
   getStorageOverview,
+  type DiskHealth,
+  type DiskHealthStatus,
   type DiskUsage,
   type StorageOverview,
 } from "@/lib/storage-stats";
@@ -78,6 +80,93 @@ function DiskUsageSummary({
   );
 }
 
+const healthLabels: Record<DiskHealthStatus, string> = {
+  healthy: "Sehat",
+  warning: "Perlu perhatian",
+  critical: "Bermasalah",
+  unavailable: "Tidak tersedia",
+};
+
+const healthClasses: Record<DiskHealthStatus, string> = {
+  healthy: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  warning: "bg-amber-50 text-amber-700 ring-amber-200",
+  critical: "bg-red-50 text-red-700 ring-red-200",
+  unavailable: "bg-slate-100 text-slate-600 ring-slate-200",
+};
+
+function formatHours(hours: number | null) {
+  if (hours === null) return "-";
+  const days = Math.floor(hours / 24);
+  return days > 0
+    ? `${days.toLocaleString("id-ID")} hari`
+    : `${hours.toLocaleString("id-ID")} jam`;
+}
+
+function DiskHealthSummary({
+  label,
+  disk,
+  isSsd = false,
+}: {
+  label: string;
+  disk: DiskHealth;
+  isSsd?: boolean;
+}) {
+  return (
+    <div className="min-w-0 py-1 md:border-l md:border-slate-200 md:pl-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-semibold text-slate-950">{label}</h4>
+        <span
+          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${healthClasses[disk.status]}`}
+        >
+          {healthLabels[disk.status]}
+        </span>
+      </div>
+      <p className="mt-2 truncate text-sm text-slate-500" title={disk.model}>
+        {disk.model || "-"}
+      </p>
+      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div>
+          <dt className="text-slate-500">Suhu</dt>
+          <dd className="mt-1 font-semibold text-slate-950">
+            {disk.temperatureC === null ? "-" : `${disk.temperatureC} C`}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-slate-500">Waktu menyala</dt>
+          <dd className="mt-1 font-semibold text-slate-950">
+            {formatHours(disk.powerOnHours)}
+          </dd>
+        </div>
+        {isSsd ? (
+          <div className="col-span-2">
+            <dt className="text-slate-500">Sisa umur SSD</dt>
+            <dd className="mt-1 font-semibold text-slate-950">
+              {disk.lifeRemainingPercentage === null
+                ? "-"
+                : `${disk.lifeRemainingPercentage}%`}
+            </dd>
+          </div>
+        ) : (
+          <>
+            <div>
+              <dt className="text-slate-500">Sektor dialihkan</dt>
+              <dd className="mt-1 font-semibold text-slate-950">
+                {disk.reallocatedSectors?.toLocaleString("id-ID") ?? "-"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Sektor tertunda</dt>
+              <dd className="mt-1 font-semibold text-slate-950">
+                {disk.pendingSectors?.toLocaleString("id-ID") ?? "-"}
+              </dd>
+            </div>
+          </>
+        )}
+      </dl>
+    </div>
+  );
+}
+
 function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
   return (
     <Panel title="Penyimpanan Server" className="mt-4">
@@ -100,6 +189,32 @@ function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
         <DiskUsageSummary label="HDD Lampiran" disk={overview.hdd} barClassName="bg-teal-600" />
         <DiskUsageSummary label="SSD Database" disk={overview.ssd} barClassName="bg-amber-500" />
       </dl>
+      <div className="mt-5 border-t border-slate-200 pt-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold text-slate-950">Kesehatan Perangkat</h4>
+          {overview.diskHealth ? (
+            <p className="text-xs text-slate-500">
+              Diperiksa{" "}
+              {new Intl.DateTimeFormat("id-ID", {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: "Asia/Jakarta",
+              }).format(new Date(overview.diskHealth.updatedAt))}{" "}
+              WIB
+            </p>
+          ) : null}
+        </div>
+        {overview.diskHealth ? (
+          <div className="grid gap-5 md:grid-cols-2 md:gap-0">
+            <DiskHealthSummary label="HDD Lampiran" disk={overview.diskHealth.hdd} />
+            <DiskHealthSummary label="SSD Database" disk={overview.diskHealth.ssd} isSsd />
+          </div>
+        ) : (
+          <p className="text-sm font-medium text-slate-500">
+            Data SMART belum tersedia.
+          </p>
+        )}
+      </div>
     </Panel>
   );
 }

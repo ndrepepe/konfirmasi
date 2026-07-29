@@ -1,5 +1,5 @@
 import "server-only";
-import { readdir, stat, statfs } from "node:fs/promises";
+import { readFile, readdir, stat, statfs } from "node:fs/promises";
 import path from "node:path";
 
 export type AttachmentUsage = {
@@ -15,10 +15,31 @@ export type DiskUsage = {
   usedPercentage: number;
 };
 
+export type DiskHealthStatus = "healthy" | "warning" | "critical" | "unavailable";
+
+export type DiskHealth = {
+  model: string;
+  status: DiskHealthStatus;
+  smartPassed: boolean | null;
+  temperatureC: number | null;
+  powerOnHours: number | null;
+  reallocatedSectors: number | null;
+  pendingSectors: number | null;
+  offlineUncorrectable: number | null;
+  lifeRemainingPercentage: number | null;
+};
+
+export type DiskHealthOverview = {
+  updatedAt: string;
+  hdd: DiskHealth;
+  ssd: DiskHealth;
+};
+
 export type StorageOverview = {
   attachments: AttachmentUsage | null;
   hdd: DiskUsage | null;
   ssd: DiskUsage | null;
+  diskHealth: DiskHealthOverview | null;
 };
 
 let cachedOverview:
@@ -67,6 +88,43 @@ async function readDiskUsage(targetPath: string): Promise<DiskUsage> {
   };
 }
 
+function isNullableNumber(value: unknown): value is number | null {
+  return value === null || (typeof value === "number" && Number.isFinite(value));
+}
+
+function isDiskHealth(value: unknown): value is DiskHealth {
+  if (!value || typeof value !== "object") return false;
+  const health = value as Record<string, unknown>;
+  return (
+    typeof health.model === "string" &&
+    ["healthy", "warning", "critical", "unavailable"].includes(String(health.status)) &&
+    (health.smartPassed === null || typeof health.smartPassed === "boolean") &&
+    isNullableNumber(health.temperatureC) &&
+    isNullableNumber(health.powerOnHours) &&
+    isNullableNumber(health.reallocatedSectors) &&
+    isNullableNumber(health.pendingSectors) &&
+    isNullableNumber(health.offlineUncorrectable) &&
+    isNullableNumber(health.lifeRemainingPercentage)
+  );
+}
+
+async function readDiskHealth(filePath: string): Promise<DiskHealthOverview> {
+  const parsed = JSON.parse(await readFile(filePath, "utf8")) as Record<string, unknown>;
+  if (
+    typeof parsed.updatedAt !== "string" ||
+    !isDiskHealth(parsed.hdd) ||
+    !isDiskHealth(parsed.ssd)
+  ) {
+    throw new Error("Format data kesehatan disk tidak valid.");
+  }
+
+  return {
+    updatedAt: parsed.updatedAt,
+    hdd: parsed.hdd,
+    ssd: parsed.ssd,
+  };
+}
+
 async function safely<T>(operation: () => Promise<T>) {
   try {
     return await operation();
@@ -82,15 +140,18 @@ export async function getStorageOverview(): Promise<StorageOverview> {
 
   const storagePath = process.env.FILE_STORAGE_PATH;
   const databaseStoragePath = process.env.DATABASE_STORAGE_PATH;
-  const [attachments, hdd, ssd] = await Promise.all([
+  const diskHealthPath =
+    process.env.DISK_HEALTH_PATH ?? "/var/lib/konfirmasi/disk-health.json";
+  const [attachments, hdd, ssd, diskHealth] = await Promise.all([
     storagePath ? safely(() => readAttachmentUsage(storagePath)) : Promise.resolve(null),
     storagePath ? safely(() => readDiskUsage(storagePath)) : Promise.resolve(null),
     databaseStoragePath
       ? safely(() => readDiskUsage(databaseStoragePath))
       : Promise.resolve(null),
+    safely(() => readDiskHealth(diskHealthPath)),
   ]);
 
-  const value = { attachments, hdd, ssd };
+  const value = { attachments, hdd, ssd, diskHealth };
   cachedOverview = {
     expiresAt: Date.now() + 60_000,
     value,

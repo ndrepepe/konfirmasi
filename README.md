@@ -12,7 +12,7 @@ Aplikasi Next.js untuk pelaporan prosedur konfirmasi cabang, dengan PostgreSQL u
 - Lampiran gambar, PDF, Word, dan Excel.
 - Accounting dan Admin Cabang dibatasi pada laporan milik sendiri di cabang yang ditugaskan.
 - Super User dapat mengakses seluruh data dan cabang.
-- Dashboard Super User menampilkan jumlah lampiran serta kapasitas HDD dan SSD database.
+- Dashboard Super User menampilkan jumlah lampiran, kapasitas, dan kesehatan SMART HDD/SSD.
 
 ## Menjalankan Aplikasi
 
@@ -22,7 +22,8 @@ Aplikasi Next.js untuk pelaporan prosedur konfirmasi cabang, dengan PostgreSQL u
    - `FILE_STORAGE_DRIVER=local` dan isi `FILE_STORAGE_PATH`; atau
    - isi kredensial Backblaze B2.
 4. Isi `DATABASE_STORAGE_PATH` dengan lokasi filesystem data PostgreSQL untuk statistik SSD.
-5. Terapkan skema dan jalankan aplikasi:
+5. Jalankan `sudo bash scripts/setup-disk-health.sh` untuk mengaktifkan pemeriksaan SMART.
+6. Terapkan skema dan jalankan aplikasi:
 
 ```bash
 psql "$DATABASE_URL" -f database/schema.sql
