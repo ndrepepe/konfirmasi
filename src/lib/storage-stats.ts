@@ -19,14 +19,28 @@ export type DiskHealthStatus = "healthy" | "warning" | "critical" | "unavailable
 
 export type DiskHealth = {
   model: string;
+  firmwareVersion?: string | null;
+  capacityBytes?: number | null;
+  interface?: string | null;
   status: DiskHealthStatus;
   smartPassed: boolean | null;
   temperatureC: number | null;
   powerOnHours: number | null;
+  powerCycleCount?: number | null;
+  smartErrorCount?: number | null;
+  lastSelfTestStatus?: string | null;
+  lastSelfTestHours?: number | null;
   reallocatedSectors: number | null;
   pendingSectors: number | null;
   offlineUncorrectable: number | null;
   lifeRemainingPercentage: number | null;
+  hostWrites?: string | null;
+  hostReads?: string | null;
+  hostWritesBytes?: number | null;
+  hostReadsBytes?: number | null;
+  unsafeShutdowns?: number | null;
+  crcErrorCount?: number | null;
+  commandTimeouts?: number | null;
 };
 
 export type DiskHealthOverview = {
@@ -92,19 +106,41 @@ function isNullableNumber(value: unknown): value is number | null {
   return value === null || (typeof value === "number" && Number.isFinite(value));
 }
 
+function isOptionalNullableNumber(value: unknown) {
+  return value === undefined || isNullableNumber(value);
+}
+
+function isOptionalNullableString(value: unknown) {
+  return value === undefined || value === null || typeof value === "string";
+}
+
 function isDiskHealth(value: unknown): value is DiskHealth {
   if (!value || typeof value !== "object") return false;
   const health = value as Record<string, unknown>;
   return (
     typeof health.model === "string" &&
+    isOptionalNullableString(health.firmwareVersion) &&
+    isOptionalNullableNumber(health.capacityBytes) &&
+    isOptionalNullableString(health.interface) &&
     ["healthy", "warning", "critical", "unavailable"].includes(String(health.status)) &&
     (health.smartPassed === null || typeof health.smartPassed === "boolean") &&
     isNullableNumber(health.temperatureC) &&
     isNullableNumber(health.powerOnHours) &&
+    isOptionalNullableNumber(health.powerCycleCount) &&
+    isOptionalNullableNumber(health.smartErrorCount) &&
+    isOptionalNullableString(health.lastSelfTestStatus) &&
+    isOptionalNullableNumber(health.lastSelfTestHours) &&
     isNullableNumber(health.reallocatedSectors) &&
     isNullableNumber(health.pendingSectors) &&
     isNullableNumber(health.offlineUncorrectable) &&
-    isNullableNumber(health.lifeRemainingPercentage)
+    isNullableNumber(health.lifeRemainingPercentage) &&
+    isOptionalNullableString(health.hostWrites) &&
+    isOptionalNullableString(health.hostReads) &&
+    isOptionalNullableNumber(health.hostWritesBytes) &&
+    isOptionalNullableNumber(health.hostReadsBytes) &&
+    isOptionalNullableNumber(health.unsafeShutdowns) &&
+    isOptionalNullableNumber(health.crcErrorCount) &&
+    isOptionalNullableNumber(health.commandTimeouts)
   );
 }
 

@@ -41,6 +41,73 @@ def attribute_raw(attributes, names):
     return raw_value(attribute) if attribute else None
 
 
+def attribute_display(attributes, names):
+    attribute = find_attribute(attributes, names)
+    if not attribute:
+        return None
+    raw = attribute.get("raw", {})
+    if not isinstance(raw, dict):
+        return None
+    display = raw.get("string")
+    if isinstance(display, str) and display.strip():
+        return display.strip()
+    value = nullable_number(raw.get("value"))
+    return str(value) if value is not None else None
+
+
+def attribute_bytes(attributes, names, logical_block_size=512):
+    attribute = find_attribute(attributes, names)
+    if not attribute:
+        return None
+    value = raw_value(attribute)
+    if value is None:
+        return None
+
+    name = str(attribute.get("name", "")).lower()
+    if "32mib" in name:
+        multiplier = 32 * 1024 * 1024
+    elif "gib" in name:
+        multiplier = 1024 * 1024 * 1024
+    elif "lbas" in name:
+        multiplier = logical_block_size
+    else:
+        return None
+    return value * multiplier
+
+
+def nested_number(data, parent, field):
+    value = data.get(parent, {})
+    return nullable_number(value.get(field)) if isinstance(value, dict) else None
+
+
+def nested_string(data, parent, field):
+    value = data.get(parent, {})
+    result = value.get(field) if isinstance(value, dict) else None
+    return result.strip() if isinstance(result, str) and result.strip() else None
+
+
+def latest_self_test(data):
+    self_test_log = data.get("ata_smart_self_test_log", {})
+    if not isinstance(self_test_log, dict):
+        return None, None
+
+    for log_name in ("standard", "extended"):
+        log = self_test_log.get(log_name, {})
+        table = log.get("table", []) if isinstance(log, dict) else []
+        if not isinstance(table, list) or not table:
+            continue
+        latest = table[0]
+        if not isinstance(latest, dict):
+            continue
+        test_type = nested_string(latest, "type", "string")
+        status = nested_string(latest, "status", "string")
+        lifetime_hours = nullable_number(latest.get("lifetime_hours"))
+        description = " - ".join(value for value in (test_type, status) if value)
+        return description or None, lifetime_hours
+
+    return None, None
+
+
 def life_remaining(attributes, data):
     percentage_used = nullable_number(data.get("percentage_used"))
     if percentage_used is not None:
@@ -65,14 +132,28 @@ def life_remaining(attributes, data):
 def unavailable(model="Tidak tersedia"):
     return {
         "model": model,
+        "firmwareVersion": None,
+        "capacityBytes": None,
+        "interface": None,
         "status": "unavailable",
         "smartPassed": None,
         "temperatureC": None,
         "powerOnHours": None,
+        "powerCycleCount": None,
+        "smartErrorCount": None,
+        "lastSelfTestStatus": None,
+        "lastSelfTestHours": None,
         "reallocatedSectors": None,
         "pendingSectors": None,
         "offlineUncorrectable": None,
         "lifeRemainingPercentage": None,
+        "hostWrites": None,
+        "hostReads": None,
+        "hostWritesBytes": None,
+        "hostReadsBytes": None,
+        "unsafeShutdowns": None,
+        "crcErrorCount": None,
+        "commandTimeouts": None,
     }
 
 
@@ -90,6 +171,13 @@ def read_device(device, is_ssd):
         return unavailable()
 
     model = str(data.get("model_name") or data.get("product") or device)
+    firmware = data.get("firmware_version")
+    firmware = firmware.strip() if isinstance(firmware, str) and firmware.strip() else None
+    capacity_bytes = nested_number(data, "user_capacity", "bytes")
+    interface = (
+        nested_string(data.get("interface_speed", {}), "current", "string")
+        or nested_string(data, "sata_version", "string")
+    )
     smart_status = data.get("smart_status", {})
     smart_passed = smart_status.get("passed") if isinstance(smart_status, dict) else None
     if not isinstance(smart_passed, bool):
@@ -116,6 +204,38 @@ def read_device(device, is_ssd):
         {"Offline_Uncorrectable", "Reported_Uncorrect", "Uncorrectable_Sector_Ct"},
     )
     remaining = life_remaining(attributes, data) if is_ssd else None
+    power_cycle_count = nullable_number(data.get("power_cycle_count"))
+    smart_error_count = nested_number(
+        data.get("ata_smart_error_log", {}),
+        "summary",
+        "count",
+    )
+    last_test_status, last_test_hours = latest_self_test(data)
+    host_writes = attribute_display(
+        attributes,
+        {"Total_LBAs_Written", "Host_Writes_32MiB", "Host_Writes_GiB"},
+    )
+    host_reads = attribute_display(
+        attributes,
+        {"Total_LBAs_Read", "Host_Reads_32MiB", "Host_Reads_GiB"},
+    )
+    logical_block_size = nullable_number(data.get("logical_block_size")) or 512
+    host_writes_bytes = attribute_bytes(
+        attributes,
+        {"Total_LBAs_Written", "Host_Writes_32MiB", "Host_Writes_GiB"},
+        logical_block_size,
+    )
+    host_reads_bytes = attribute_bytes(
+        attributes,
+        {"Total_LBAs_Read", "Host_Reads_32MiB", "Host_Reads_GiB"},
+        logical_block_size,
+    )
+    unsafe_shutdowns = attribute_raw(
+        attributes,
+        {"Unsafe_Shutdown_Count", "Unexpected_Power_Loss_Ct", "Power_Loss_Protection_Failure"},
+    )
+    crc_errors = attribute_raw(attributes, {"UDMA_CRC_Error_Count"})
+    command_timeouts = attribute_raw(attributes, {"Command_Timeout"})
 
     if smart_passed is False:
         status = "critical"
@@ -134,14 +254,28 @@ def read_device(device, is_ssd):
 
     return {
         "model": model,
+        "firmwareVersion": firmware,
+        "capacityBytes": capacity_bytes,
+        "interface": interface,
         "status": status,
         "smartPassed": smart_passed,
         "temperatureC": temperature_c,
         "powerOnHours": power_on_hours,
+        "powerCycleCount": power_cycle_count,
+        "smartErrorCount": smart_error_count,
+        "lastSelfTestStatus": last_test_status,
+        "lastSelfTestHours": last_test_hours,
         "reallocatedSectors": reallocated,
         "pendingSectors": pending,
         "offlineUncorrectable": uncorrectable,
         "lifeRemainingPercentage": remaining,
+        "hostWrites": host_writes,
+        "hostReads": host_reads,
+        "hostWritesBytes": host_writes_bytes,
+        "hostReadsBytes": host_reads_bytes,
+        "unsafeShutdowns": unsafe_shutdowns,
+        "crcErrorCount": crc_errors,
+        "commandTimeouts": command_timeouts,
     }
 
 

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import {
   Activity,
+  ChevronDown,
   Database,
   Files,
   HardDrive,
@@ -120,6 +121,40 @@ function formatHours(hours: number | null) {
     : `${hours.toLocaleString("id-ID")} jam`;
 }
 
+function SmartDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className="mt-1 break-words text-sm font-semibold text-slate-800">
+        {value === null || value === undefined || value === "" ? "-" : value}
+      </dd>
+    </div>
+  );
+}
+
+function formatSelfTest(value: string | null | undefined) {
+  if (!value) return "Belum ada hasil";
+  const translations: Array<[string, string]> = [
+    ["Extended offline", "Pemeriksaan panjang"],
+    ["Short offline", "Pemeriksaan singkat"],
+    ["Completed without error", "Selesai tanpa error"],
+    ["Completed: read failure", "Gagal membaca"],
+    ["Interrupted (host reset)", "Terhenti karena restart"],
+    ["Aborted by host", "Dihentikan oleh sistem"],
+  ];
+
+  return translations.reduce(
+    (result, [source, target]) => result.replace(source, target),
+    value,
+  );
+}
+
 function DiskHealthSummary({
   label,
   disk,
@@ -192,6 +227,96 @@ function DiskHealthSummary({
           </>
         )}
       </dl>
+      <details className="group mt-5 border-t border-slate-200 pt-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-teal-700 outline-none [&::-webkit-details-marker]:hidden">
+          <span>Detail SMART</span>
+          <ChevronDown
+            className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+            aria-hidden
+          />
+        </summary>
+        <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4">
+          <SmartDetail label="Firmware" value={disk.firmwareVersion} />
+          <SmartDetail
+            label="Kapasitas fisik"
+            value={disk.capacityBytes ? formatBytes(disk.capacityBytes) : null}
+          />
+          <SmartDetail label="Antarmuka aktif" value={disk.interface} />
+          <SmartDetail
+            label="Status SMART"
+            value={
+              disk.smartPassed === null
+                ? "Tidak tersedia"
+                : disk.smartPassed
+                  ? "Lulus"
+                  : "Gagal"
+            }
+          />
+          <SmartDetail
+            label="Siklus daya"
+            value={disk.powerCycleCount?.toLocaleString("id-ID")}
+          />
+          <SmartDetail
+            label="Jumlah error SMART"
+            value={disk.smartErrorCount?.toLocaleString("id-ID")}
+          />
+          <SmartDetail
+            label="Self-test terakhir"
+            value={formatSelfTest(disk.lastSelfTestStatus)}
+          />
+          <SmartDetail
+            label="Usia saat self-test"
+            value={
+              disk.lastSelfTestHours === null || disk.lastSelfTestHours === undefined
+                ? null
+                : formatHours(disk.lastSelfTestHours)
+            }
+          />
+          {isSsd ? (
+            <>
+              <SmartDetail
+                label="Total data ditulis"
+                value={
+                  disk.hostWritesBytes
+                    ? formatBytes(disk.hostWritesBytes)
+                    : disk.hostWrites
+                }
+              />
+              <SmartDetail
+                label="Total data dibaca"
+                value={
+                  disk.hostReadsBytes
+                    ? formatBytes(disk.hostReadsBytes)
+                    : disk.hostReads
+                }
+              />
+              <SmartDetail
+                label="Kehilangan daya tidak normal"
+                value={disk.unsafeShutdowns?.toLocaleString("id-ID")}
+              />
+              <SmartDetail
+                label="Blok dialihkan"
+                value={disk.reallocatedSectors?.toLocaleString("id-ID")}
+              />
+            </>
+          ) : (
+            <>
+              <SmartDetail
+                label="Sektor tidak terkoreksi"
+                value={disk.offlineUncorrectable?.toLocaleString("id-ID")}
+              />
+              <SmartDetail
+                label="Error kabel/data"
+                value={disk.crcErrorCount?.toLocaleString("id-ID")}
+              />
+              <SmartDetail
+                label="Command timeout"
+                value={disk.commandTimeouts?.toLocaleString("id-ID")}
+              />
+            </>
+          )}
+        </dl>
+      </details>
     </div>
   );
 }
