@@ -1,4 +1,11 @@
 import { Suspense } from "react";
+import {
+  Activity,
+  Database,
+  Files,
+  HardDrive,
+  type LucideIcon,
+} from "lucide-react";
 import { DashboardSkeleton } from "@/components/loading-panels";
 import { PageHeader, Panel } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
@@ -32,17 +39,28 @@ function DiskUsageSummary({
   label,
   disk,
   barClassName,
+  icon: Icon,
+  iconClassName,
+  className,
 }: {
   label: string;
   disk: DiskUsage | null;
   barClassName: string;
+  icon: LucideIcon;
+  iconClassName: string;
+  className?: string;
 }) {
   return (
-    <div className="min-w-0 py-1 md:border-l md:border-slate-200 md:pl-5">
-      <dt className="text-sm font-medium text-slate-600">{label}</dt>
+    <div className={`min-w-0 ${className ?? ""}`}>
+      <dt className="flex items-center gap-3">
+        <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${iconClassName}`}>
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+        <span className="text-sm font-semibold text-slate-700">{label}</span>
+      </dt>
       {disk ? (
-        <dd className="mt-2">
-          <div className="flex items-baseline justify-between gap-3">
+        <dd className="mt-4">
+          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
             <span className="text-2xl font-semibold text-slate-950">
               {formatBytes(disk.availableBytes)}
             </span>
@@ -106,25 +124,36 @@ function DiskHealthSummary({
   label,
   disk,
   isSsd = false,
+  icon: Icon,
+  iconClassName,
+  className,
 }: {
   label: string;
   disk: DiskHealth;
   isSsd?: boolean;
+  icon: LucideIcon;
+  iconClassName: string;
+  className?: string;
 }) {
   return (
-    <div className="min-w-0 py-1 md:border-l md:border-slate-200 md:pl-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold text-slate-950">{label}</h4>
+    <div className={`min-w-0 ${className ?? ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${iconClassName}`}>
+            <Icon className="h-4 w-4" aria-hidden />
+          </span>
+          <h4 className="text-sm font-semibold text-slate-950">{label}</h4>
+        </div>
         <span
-          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${healthClasses[disk.status]}`}
+          className={`inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${healthClasses[disk.status]}`}
         >
           {healthLabels[disk.status]}
         </span>
       </div>
-      <p className="mt-2 truncate text-sm text-slate-500" title={disk.model}>
+      <p className="mt-3 truncate text-sm text-slate-500" title={disk.model}>
         {disk.model || "-"}
       </p>
-      <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-slate-100 pt-4 text-sm">
         <div>
           <dt className="text-slate-500">Suhu</dt>
           <dd className="mt-1 font-semibold text-slate-950">
@@ -170,11 +199,16 @@ function DiskHealthSummary({
 function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
   return (
     <Panel title="Penyimpanan Server" className="mt-4">
-      <dl className="grid gap-5 md:grid-cols-3 md:gap-0">
-        <div className="min-w-0 py-1 md:pr-5">
-          <dt className="text-sm font-medium text-slate-600">File Lampiran</dt>
+      <dl className="grid divide-y divide-slate-200 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <div className="min-w-0 pb-5 lg:py-1 lg:pr-7">
+          <dt className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sky-50 text-sky-700">
+              <Files className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="text-sm font-semibold text-slate-700">File Lampiran</span>
+          </dt>
           {overview.attachments ? (
-            <dd className="mt-2">
+            <dd className="mt-4">
               <p className="text-2xl font-semibold text-slate-950">
                 {overview.attachments.fileCount.toLocaleString("id-ID")} file
               </p>
@@ -186,12 +220,29 @@ function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
             <dd className="mt-2 text-sm font-medium text-slate-500">Tidak tersedia</dd>
           )}
         </div>
-        <DiskUsageSummary label="HDD Lampiran" disk={overview.hdd} barClassName="bg-teal-600" />
-        <DiskUsageSummary label="SSD Database" disk={overview.ssd} barClassName="bg-amber-500" />
+        <DiskUsageSummary
+          label="HDD Lampiran"
+          disk={overview.hdd}
+          barClassName="bg-teal-600"
+          icon={HardDrive}
+          iconClassName="bg-teal-50 text-teal-700"
+          className="py-5 lg:px-7 lg:py-1"
+        />
+        <DiskUsageSummary
+          label="SSD Database"
+          disk={overview.ssd}
+          barClassName="bg-amber-500"
+          icon={Database}
+          iconClassName="bg-amber-50 text-amber-700"
+          className="pt-5 lg:py-1 lg:pl-7"
+        />
       </dl>
-      <div className="mt-5 border-t border-slate-200 pt-5">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold text-slate-950">Kesehatan Perangkat</h4>
+      <div className="mt-7 border-t border-slate-200 pt-6">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Activity className="h-4 w-4 text-slate-500" aria-hidden />
+            <h4 className="text-sm font-semibold text-slate-950">Kesehatan Perangkat</h4>
+          </div>
           {overview.diskHealth ? (
             <p className="text-xs text-slate-500">
               Diperiksa{" "}
@@ -205,9 +256,22 @@ function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
           ) : null}
         </div>
         {overview.diskHealth ? (
-          <div className="grid gap-5 md:grid-cols-2 md:gap-0">
-            <DiskHealthSummary label="HDD Lampiran" disk={overview.diskHealth.hdd} />
-            <DiskHealthSummary label="SSD Database" disk={overview.diskHealth.ssd} isSsd />
+          <div className="mt-4 grid divide-y divide-slate-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+            <DiskHealthSummary
+              label="HDD Lampiran"
+              disk={overview.diskHealth.hdd}
+              icon={HardDrive}
+              iconClassName="bg-teal-50 text-teal-700"
+              className="pb-5 lg:py-1 lg:pr-8"
+            />
+            <DiskHealthSummary
+              label="SSD Database"
+              disk={overview.diskHealth.ssd}
+              isSsd
+              icon={Database}
+              iconClassName="bg-amber-50 text-amber-700"
+              className="pt-5 lg:py-1 lg:pl-8"
+            />
           </div>
         ) : (
           <p className="text-sm font-medium text-slate-500">
