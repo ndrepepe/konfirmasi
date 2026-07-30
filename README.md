@@ -12,7 +12,7 @@ Aplikasi Next.js untuk pelaporan prosedur konfirmasi cabang, dengan PostgreSQL u
 - Lampiran gambar, PDF, Word, dan Excel.
 - Accounting dan Admin Cabang dibatasi pada laporan milik sendiri di cabang yang ditugaskan.
 - Super User dapat mengakses seluruh data dan cabang.
-- Dashboard Super User menampilkan jumlah lampiran, kapasitas, dan kesehatan SMART HDD/SSD.
+- Dashboard Super User menampilkan jumlah lampiran, kapasitas, dan kesehatan SMART seluruh HDD/SSD server.
 
 ## Menjalankan Aplikasi
 

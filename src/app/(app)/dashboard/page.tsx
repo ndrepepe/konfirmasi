@@ -381,13 +381,13 @@ function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
           ) : null}
         </div>
         {overview.diskHealth ? (
-          <div className="mt-4 grid divide-y divide-slate-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+          <div className="mt-4 grid divide-y divide-slate-200 lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             <DiskHealthSummary
               label="HDD Lampiran"
               disk={overview.diskHealth.hdd}
               icon={HardDrive}
               iconClassName="bg-teal-50 text-teal-700"
-              className="pb-5 lg:py-1 lg:pr-8"
+              className="pb-5 lg:py-1 lg:pr-6"
             />
             <DiskHealthSummary
               label="SSD Database"
@@ -395,8 +395,18 @@ function StorageOverviewPanel({ overview }: { overview: StorageOverview }) {
               isSsd
               icon={Database}
               iconClassName="bg-amber-50 text-amber-700"
-              className="pt-5 lg:py-1 lg:pl-8"
+              className="py-5 lg:px-6 lg:py-1"
             />
+            {overview.diskHealth.dataSsd ? (
+              <DiskHealthSummary
+                label="SSD PostgreSQL Sistem"
+                disk={overview.diskHealth.dataSsd}
+                isSsd
+                icon={Database}
+                iconClassName="bg-sky-50 text-sky-700"
+                className="pt-5 lg:py-1 lg:pl-6"
+              />
+            ) : null}
           </div>
         ) : (
           <p className="text-sm font-medium text-slate-500">

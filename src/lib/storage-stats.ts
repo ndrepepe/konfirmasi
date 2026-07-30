@@ -47,6 +47,7 @@ export type DiskHealthOverview = {
   updatedAt: string;
   hdd: DiskHealth;
   ssd: DiskHealth;
+  dataSsd?: DiskHealth;
 };
 
 export type StorageOverview = {
@@ -149,7 +150,8 @@ async function readDiskHealth(filePath: string): Promise<DiskHealthOverview> {
   if (
     typeof parsed.updatedAt !== "string" ||
     !isDiskHealth(parsed.hdd) ||
-    !isDiskHealth(parsed.ssd)
+    !isDiskHealth(parsed.ssd) ||
+    (parsed.dataSsd !== undefined && !isDiskHealth(parsed.dataSsd))
   ) {
     throw new Error("Format data kesehatan disk tidak valid.");
   }
@@ -158,6 +160,7 @@ async function readDiskHealth(filePath: string): Promise<DiskHealthOverview> {
     updatedAt: parsed.updatedAt,
     hdd: parsed.hdd,
     ssd: parsed.ssd,
+    dataSsd: parsed.dataSsd as DiskHealth | undefined,
   };
 }
 

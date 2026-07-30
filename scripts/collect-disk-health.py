@@ -11,6 +11,7 @@ OUTPUT_PATH = Path(os.environ.get("DISK_HEALTH_PATH", "/var/lib/konfirmasi/disk-
 DEVICES = {
     "hdd": os.environ.get("KONFIRMASI_HDD_DEVICE", "/dev/sdb"),
     "ssd": os.environ.get("KONFIRMASI_SSD_DEVICE", "/dev/sdc"),
+    "dataSsd": os.environ.get("KONFIRMASI_DATA_SSD_DEVICE", "/dev/sda"),
 }
 
 
@@ -284,6 +285,7 @@ def main():
         "updatedAt": datetime.now(timezone.utc).isoformat(),
         "hdd": read_device(DEVICES["hdd"], False),
         "ssd": read_device(DEVICES["ssd"], True),
+        "dataSsd": read_device(DEVICES["dataSsd"], True),
     }
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
