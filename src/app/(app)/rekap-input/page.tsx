@@ -16,7 +16,7 @@ import { canViewInputRecap, roleLabels } from "@/lib/permissions";
 
 const inputKindLabels: Record<InputRecapKind, string> = {
   customer_baru: "Customer Baru",
-  pemenuhan_po: "Pemenuhan PO",
+  pemenuhan_po: "Konfirmasi PO",
   penagihan: "Penagihan",
 };
 
@@ -139,7 +139,7 @@ export default async function InputRecapPage({
               { key: "email", label: "Email" },
               { key: "role", label: "Role", filterable: true },
               { key: "customer_baru", label: "Customer Baru" },
-              { key: "pemenuhan_po", label: "Pemenuhan PO" },
+              { key: "pemenuhan_po", label: "Konfirmasi PO" },
               { key: "penagihan", label: "Penagihan" },
               { key: "total", label: "Total", strong: true },
             ]}

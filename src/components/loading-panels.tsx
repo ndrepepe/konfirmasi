@@ -58,7 +58,7 @@ export function DashboardSkeleton() {
   return (
     <>
       <div className="grid gap-4 md:grid-cols-3">
-        {["Customer Baru", "Pemenuhan PO", "Penagihan"].map((title) => (
+        {["Customer Baru", "Konfirmasi PO", "Penagihan"].map((title) => (
           <Panel key={title} title={title}>
             <div className="h-8 w-16 animate-pulse rounded-md bg-slate-100" />
             <div className="mt-2 h-4 w-32 animate-pulse rounded-md bg-slate-100" />

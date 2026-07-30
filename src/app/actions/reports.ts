@@ -157,7 +157,7 @@ export async function createPemenuhanPo(formData: FormData) {
 export async function updatePemenuhanPo(formData: FormData) {
   const profile = await requireProfile();
   const id = String(formData.get("id") ?? "");
-  if (!id) throw new Error("ID laporan pemenuhan PO tidak ditemukan.");
+  if (!id) throw new Error("ID laporan Konfirmasi PO tidak ditemukan.");
   const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
   if (!canAccessBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa edit data cabang sendiri.");

@@ -433,7 +433,7 @@ async function DashboardContent() {
           <p className="text-3xl font-semibold text-slate-950">{customers}</p>
           <p className="mt-1 text-sm text-slate-500">Total data tercatat</p>
         </Panel>
-        <Panel title="Pemenuhan PO">
+        <Panel title="Konfirmasi PO">
           <p className="text-3xl font-semibold text-slate-950">{pos}</p>
           <p className="mt-1 text-sm text-slate-500">Total data tercatat</p>
         </Panel>

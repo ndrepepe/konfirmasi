@@ -44,11 +44,11 @@ export default async function PemenuhanPoDetailPage({
   return (
     <Guard profile={profile} href="/pemenuhan-po">
       <PageHeader
-        title="Detail Pemenuhan PO"
-        description="Detail lengkap data Pemenuhan PO dan file lampiran."
+        title="Detail Konfirmasi PO"
+        description="Detail lengkap data Konfirmasi PO dan file lampiran."
       />
       <div className="grid gap-5">
-        <Panel title="Data Pemenuhan PO">
+        <Panel title="Data Konfirmasi PO">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <DetailField label="Cabang" value={row.branches?.name ?? row.branches?.code} />
             <DetailField label="Nama Customer" value={String(row.customer_name ?? "")} />

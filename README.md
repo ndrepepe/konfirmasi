@@ -5,7 +5,7 @@ Aplikasi Next.js untuk pelaporan prosedur konfirmasi cabang, dengan PostgreSQL u
 ## Fitur
 
 - Role `super_user`, `accounting`, dan `admin_cabang`.
-- Modul Customer Baru, Pemenuhan PO, dan Penagihan.
+- Modul Customer Baru, Konfirmasi PO, dan Penagihan.
 - Rekap input harian untuk Super User.
 - Data Sales, Customer, Cabang, dan pengaturan user.
 - Import Excel untuk data master.

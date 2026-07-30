@@ -33,7 +33,7 @@ export default async function PemenuhanPoPage({
   return (
     <Guard profile={profile} href="/pemenuhan-po">
       <PageHeader
-        title="Pemenuhan PO"
+        title="Konfirmasi PO"
         description="Catat data PO, lampiran PO, dan bukti konfirmasi untuk proses pemenuhan."
       />
       <PageSubnav
@@ -45,9 +45,9 @@ export default async function PemenuhanPoPage({
         key={`${params.view ?? "input"}-${params.edit ?? "new"}`}
         fallback={
           activeView === "input" ? (
-            <FormPanelSkeleton title="Form Pemenuhan PO" />
+            <FormPanelSkeleton title="Form Konfirmasi PO" />
           ) : (
-            <DataPanelSkeleton title="Data Pemenuhan PO" />
+            <DataPanelSkeleton title="Data Konfirmasi PO" />
           )
         }
       >
@@ -89,7 +89,7 @@ async function PemenuhanPoContent({
       ])
     : [[], []];
   const dataPanel = (
-    <Panel title="Data Pemenuhan PO" className="flex min-h-0 flex-col">
+    <Panel title="Data Konfirmasi PO" className="flex min-h-0 flex-col">
       <ReportTable
         rows={rows}
         editHrefBase={canInputPemenuhanPo ? "/pemenuhan-po" : undefined}
@@ -111,7 +111,7 @@ async function PemenuhanPoContent({
   return (
     <>
       {activeView === "input" ? (
-        <Panel title={editingRow ? "Edit Pemenuhan PO" : "Form Pemenuhan PO"} className="flex min-h-0 flex-col">
+        <Panel title={editingRow ? "Edit Konfirmasi PO" : "Form Konfirmasi PO"} className="flex min-h-0 flex-col">
           <form action={editingRow ? updatePemenuhanPo : createPemenuhanPo} className="grid gap-4">
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
             <BranchScopedCustomerSelect

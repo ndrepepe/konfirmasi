@@ -31,7 +31,7 @@ export default async function DataSalesPage({
     <Guard profile={profile} href="/data-sales">
       <PageHeader
         title="Data Sales"
-        description="Kelola master sales yang digunakan pada Customer Baru dan Pemenuhan PO."
+        description="Kelola master sales yang digunakan pada Customer Baru dan Konfirmasi PO."
       />
       <PageSubnav
         baseHref="/data-sales"

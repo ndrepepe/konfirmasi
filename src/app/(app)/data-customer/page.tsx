@@ -39,7 +39,7 @@ export default async function DataCustomerPage({
     <Guard profile={profile} href="/data-customer">
       <PageHeader
         title="Data Customer"
-        description="Kelola master customer berdasarkan cabang untuk digunakan pada Pemenuhan PO."
+        description="Kelola master customer berdasarkan cabang untuk digunakan pada Konfirmasi PO."
       />
       <PageSubnav
         baseHref="/data-customer"
