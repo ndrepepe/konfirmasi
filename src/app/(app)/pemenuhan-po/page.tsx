@@ -34,7 +34,7 @@ export default async function PemenuhanPoPage({
     <Guard profile={profile} href="/pemenuhan-po">
       <PageHeader
         title="Konfirmasi PO"
-        description="Catat data PO, lampiran PO, dan bukti konfirmasi untuk proses pemenuhan."
+        description="Catat data PO, lampiran PO, dan bukti konfirmasi."
       />
       <PageSubnav
         baseHref="/pemenuhan-po"
