@@ -1,6 +1,11 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const allowedTypes = new Set([
@@ -31,7 +36,7 @@ function getS3Client() {
   });
 }
 
-function useLocalStorage() {
+function isLocalStorage() {
   return process.env.FILE_STORAGE_DRIVER === "local";
 }
 
@@ -66,7 +71,7 @@ export async function uploadAttachment(file: File | null, folder: string) {
   const key = `${folder}/${Date.now()}-${crypto.randomUUID()}-${safeName}`;
   const body = Buffer.from(await file.arrayBuffer());
 
-  if (useLocalStorage()) {
+  if (isLocalStorage()) {
     const target = resolveLocalStoragePath(key);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, body);
@@ -100,13 +105,18 @@ export async function uploadAttachment(file: File | null, folder: string) {
 }
 
 export async function uploadAttachments(files: File[], folder: string) {
-  const uploaded = await Promise.all(
-    files
-      .filter((file) => file.size > 0)
-      .map((file) => uploadAttachment(file, folder)),
-  );
+  const uploaded: StoredAttachment[] = [];
 
-  return uploaded.filter(Boolean);
+  try {
+    for (const file of files.filter((candidate) => candidate.size > 0)) {
+      const attachment = await uploadAttachment(file, folder);
+      if (attachment) uploaded.push(attachment);
+    }
+    return uploaded;
+  } catch (error) {
+    await deleteStoredAttachments(uploaded).catch(() => undefined);
+    throw error;
+  }
 }
 
 export type StoredAttachment = {
@@ -116,7 +126,7 @@ export type StoredAttachment = {
   size?: number;
 };
 
-function parseStoredAttachments(value: unknown): StoredAttachment[] {
+export function parseStoredAttachments(value: unknown): StoredAttachment[] {
   let parsed = value;
 
   for (let depth = 0; depth < 2 && typeof parsed === "string"; depth += 1) {
@@ -141,8 +151,35 @@ function parseStoredAttachments(value: unknown): StoredAttachment[] {
   );
 }
 
+export async function deleteStoredAttachments(files: StoredAttachment[]) {
+  const uniqueFiles = Array.from(new Map(files.map((file) => [file.key, file])).values());
+  if (!uniqueFiles.length) return;
+
+  if (isLocalStorage()) {
+    await Promise.all(
+      uniqueFiles.map(async (file) => {
+        try {
+          await unlink(resolveLocalStoragePath(file.key));
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+        }
+      }),
+    );
+    return;
+  }
+
+  const bucket = process.env.BACKBLAZE_BUCKET;
+  if (!bucket) throw new Error("BACKBLAZE_BUCKET belum dikonfigurasi.");
+  const client = getS3Client();
+  await Promise.all(
+    uniqueFiles.map((file) =>
+      client.send(new DeleteObjectCommand({ Bucket: bucket, Key: file.key })),
+    ),
+  );
+}
+
 export async function getAttachmentUrl(key: string) {
-  if (useLocalStorage()) {
+  if (isLocalStorage()) {
     return `/api/files/${key.split("/").map(encodeURIComponent).join("/")}`;
   }
 

@@ -11,7 +11,13 @@ import {
 } from "@/lib/permissions";
 import { createAdminClient } from "@/lib/database/admin";
 import { createClient } from "@/lib/database/server";
-import { uploadAttachments } from "@/lib/storage";
+import {
+  deleteStoredAttachments,
+  parseStoredAttachments,
+  type StoredAttachment,
+  uploadAttachments,
+} from "@/lib/storage";
+import type { Profile } from "@/lib/types";
 import {
   customerBaruSchema,
   pemenuhanPoSchema,
@@ -20,6 +26,49 @@ import {
 
 function filesFromForm(formData: FormData, name: string) {
   return formData.getAll(name).filter((value): value is File => value instanceof File);
+}
+
+function attachmentChanges(
+  currentValue: unknown,
+  formData: FormData,
+  fieldName: string,
+  uploaded: StoredAttachment[],
+) {
+  const current = parseStoredAttachments(currentValue);
+  const removedKeys = new Set(
+    formData.getAll(`${fieldName}_remove`).map((value) => String(value)),
+  );
+  const removed = current.filter((file) => removedKeys.has(file.key));
+  const retained = current.filter((file) => !removedKeys.has(file.key));
+
+  return {
+    next: [...retained, ...uploaded],
+    removed,
+  };
+}
+
+async function cleanupUploaded(files: StoredAttachment[]) {
+  await deleteStoredAttachments(files).catch(() => undefined);
+}
+
+async function getEditableReport(profile: Profile, table: string, id: string) {
+  const admin = createAdminClient();
+  let query = admin.from(table).select("*").eq("id", id);
+
+  if (!canViewAllBranches(profile)) {
+    const branchIds = getAssignedBranchIds(profile);
+    if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
+    query = query.eq("created_by", profile.id).in("branch_id", branchIds);
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Data tidak ditemukan atau tidak dapat diedit.");
+
+  return {
+    admin,
+    row: data as Record<string, unknown>,
+  };
 }
 
 async function requireSuperUser() {
@@ -88,14 +137,11 @@ export async function updateCustomerBaru(formData: FormData) {
   if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
   }
-  const admin = createAdminClient();
-  const confirmation = await uploadAttachments(
-    filesFromForm(formData, "confirmation_file"),
-    "customer-baru",
+  const { admin, row } = await getEditableReport(
+    profile,
+    "customer_baru_reports",
+    id,
   );
-
-  const updatePayload: Record<string, unknown> = { ...parsed };
-  if (confirmation.length) updatePayload.confirmation_file = confirmation;
 
   const { error: customerError } = await admin.from("data_customers").upsert(
     {
@@ -108,14 +154,33 @@ export async function updateCustomerBaru(formData: FormData) {
   );
   if (customerError) throw new Error(customerError.message);
 
+  const confirmation = await uploadAttachments(
+    filesFromForm(formData, "confirmation_file"),
+    "customer-baru",
+  );
+  const confirmationChanges = attachmentChanges(
+    row.confirmation_file,
+    formData,
+    "confirmation_file",
+    confirmation,
+  );
+  const updatePayload: Record<string, unknown> = {
+    ...parsed,
+    confirmation_file: confirmationChanges.next,
+  };
+
   let query = admin.from("customer_baru_reports").update(updatePayload).eq("id", id);
   if (!canViewAllBranches(profile)) {
     const branchIds = getAssignedBranchIds(profile);
     if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
     query = query.eq("created_by", profile.id).in("branch_id", branchIds);
   }
-  const { error } = await query;
-  if (error) throw new Error(error.message);
+  const { data, error } = await query;
+  if (error || !Array.isArray(data) || !data.length) {
+    await cleanupUploaded(confirmation);
+    throw new Error(error?.message ?? "Data tidak ditemukan atau tidak dapat diedit.");
+  }
+  await deleteStoredAttachments(confirmationChanges.removed);
   revalidatePath("/customer-baru");
   revalidatePath("/data-customer");
   redirect("/customer-baru?view=data&updated=1");
@@ -166,15 +231,38 @@ export async function updatePemenuhanPo(formData: FormData) {
     throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
   }
 
-  const admin = createAdminClient();
-  const poFile = await uploadAttachments(filesFromForm(formData, "po_file"), "pemenuhan-po/po");
-  const confirmation = await uploadAttachments(
-    filesFromForm(formData, "confirmation_file"),
-    "pemenuhan-po/konfirmasi",
+  const { admin, row } = await getEditableReport(
+    profile,
+    "pemenuhan_po_reports",
+    id,
   );
-  const updatePayload: Record<string, unknown> = { ...parsed };
-  if (poFile.length) updatePayload.po_file = poFile;
-  if (confirmation.length) updatePayload.confirmation_file = confirmation;
+  let poFile: StoredAttachment[] = [];
+  let confirmation: StoredAttachment[] = [];
+  try {
+    poFile = await uploadAttachments(
+      filesFromForm(formData, "po_file"),
+      "pemenuhan-po/po",
+    );
+    confirmation = await uploadAttachments(
+      filesFromForm(formData, "confirmation_file"),
+      "pemenuhan-po/konfirmasi",
+    );
+  } catch (error) {
+    await cleanupUploaded([...poFile, ...confirmation]);
+    throw error;
+  }
+  const poChanges = attachmentChanges(row.po_file, formData, "po_file", poFile);
+  const confirmationChanges = attachmentChanges(
+    row.confirmation_file,
+    formData,
+    "confirmation_file",
+    confirmation,
+  );
+  const updatePayload: Record<string, unknown> = {
+    ...parsed,
+    po_file: poChanges.next,
+    confirmation_file: confirmationChanges.next,
+  };
 
   let query = admin.from("pemenuhan_po_reports").update(updatePayload).eq("id", id);
   if (!canViewAllBranches(profile)) {
@@ -182,8 +270,15 @@ export async function updatePemenuhanPo(formData: FormData) {
     if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
     query = query.eq("created_by", profile.id).in("branch_id", branchIds);
   }
-  const { error } = await query;
-  if (error) throw new Error(error.message);
+  const { data, error } = await query;
+  if (error || !Array.isArray(data) || !data.length) {
+    await cleanupUploaded([...poFile, ...confirmation]);
+    throw new Error(error?.message ?? "Data tidak ditemukan atau tidak dapat diedit.");
+  }
+  await deleteStoredAttachments([
+    ...poChanges.removed,
+    ...confirmationChanges.removed,
+  ]);
   revalidatePath("/pemenuhan-po");
   redirect("/pemenuhan-po?view=data&updated=1");
 }
@@ -224,10 +319,17 @@ export async function updatePenagihan(formData: FormData) {
   if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
     throw new Error("Anda hanya bisa edit data cabang yang diset untuk user Anda.");
   }
-  const admin = createAdminClient();
+  const { admin, row } = await getEditableReport(
+    profile,
+    "penagihan_reports",
+    id,
+  );
   const proof = await uploadAttachments(filesFromForm(formData, "proof_file"), "penagihan");
-  const updatePayload: Record<string, unknown> = { ...parsed };
-  if (proof.length) updatePayload.proof_file = proof;
+  const proofChanges = attachmentChanges(row.proof_file, formData, "proof_file", proof);
+  const updatePayload: Record<string, unknown> = {
+    ...parsed,
+    proof_file: proofChanges.next,
+  };
 
   let query = admin.from("penagihan_reports").update(updatePayload).eq("id", id);
   if (!canViewAllBranches(profile)) {
@@ -235,8 +337,12 @@ export async function updatePenagihan(formData: FormData) {
     if (!branchIds.length) throw new Error("User belum memiliki akses cabang.");
     query = query.eq("created_by", profile.id).in("branch_id", branchIds);
   }
-  const { error } = await query;
-  if (error) throw new Error(error.message);
+  const { data, error } = await query;
+  if (error || !Array.isArray(data) || !data.length) {
+    await cleanupUploaded(proof);
+    throw new Error(error?.message ?? "Data tidak ditemukan atau tidak dapat diedit.");
+  }
+  await deleteStoredAttachments(proofChanges.removed);
   revalidatePath("/penagihan");
   redirect("/penagihan?view=data&updated=1");
 }

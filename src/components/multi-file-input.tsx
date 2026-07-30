@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink, FileText, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxImageSize = 1600;
@@ -70,10 +70,12 @@ export function MultiFileInput({
     size?: number;
   }>;
 }) {
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const selectedFilesRef = useRef<File[]>([]);
+  const [removedKeys, setRemovedKeys] = useState<Set<string>>(new Set());
 
   function syncInputFiles(input: HTMLInputElement, files: File[]) {
     const transfer = new DataTransfer();
@@ -91,10 +93,20 @@ export function MultiFileInput({
     setStatus(nextFiles.length ? `${nextFiles.length} file siap.` : "");
   }
 
+  function setExistingFileRemoved(key: string, removed: boolean) {
+    setRemovedKeys((current) => {
+      const next = new Set(current);
+      if (removed) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  }
+
   return (
-    <label className="grid gap-1.5 text-sm font-medium text-slate-700">
-      {label}
+    <div className="grid gap-1.5 text-sm font-medium text-slate-700">
+      <label htmlFor={inputId}>{label}</label>
       <input
+        id={inputId}
         ref={inputRef}
         name={name}
         type="file"
@@ -134,28 +146,51 @@ export function MultiFileInput({
         <div className="grid gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 font-normal">
           <span className="text-xs font-semibold text-slate-700">File tersimpan</span>
           <ul className="grid gap-1">
-            {existingFiles.map((file) => (
-              <li key={file.key}>
-                <a
-                  href={file.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1 text-xs text-teal-700 hover:bg-teal-50"
-                  title={`Buka ${file.name}`}
+            {existingFiles.map((file) => {
+              const removed = removedKeys.has(file.key);
+              return (
+                <li
+                  key={file.key}
+                  className={`flex min-w-0 items-center gap-2 rounded-md px-1 py-1 ${
+                    removed ? "bg-red-50" : ""
+                  }`}
                 >
-                  <FileText className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {file.name}
-                    {file.size ? (
-                      <span className="ml-1 text-slate-500">
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    ) : null}
-                  </span>
-                  <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
-                </a>
-              </li>
-            ))}
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`flex min-w-0 flex-1 items-center gap-2 text-xs hover:text-teal-800 ${
+                      removed ? "text-slate-400 line-through" : "text-teal-700"
+                    }`}
+                    title={`Buka ${file.name}`}
+                  >
+                    <FileText className="size-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {file.name}
+                      {file.size ? (
+                        <span className="ml-1 text-slate-500">
+                          ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      ) : null}
+                    </span>
+                    <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+                  </a>
+                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-600">
+                    <input
+                      type="checkbox"
+                      name={`${name}_remove`}
+                      value={file.key}
+                      checked={removed}
+                      onChange={(event) =>
+                        setExistingFileRemoved(file.key, event.currentTarget.checked)
+                      }
+                      className="size-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                    />
+                    {removed ? "Akan dihapus" : "Hapus"}
+                  </label>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
@@ -183,6 +218,6 @@ export function MultiFileInput({
           ))}
         </ul>
       ) : null}
-    </label>
+    </div>
   );
 }
