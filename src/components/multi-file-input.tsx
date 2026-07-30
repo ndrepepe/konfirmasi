@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink, FileText, X } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { ExternalLink, FileText, LoaderCircle, Trash2, X } from "lucide-react";
+import { useId, useRef, useState, useTransition } from "react";
 
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxImageSize = 1600;
@@ -58,6 +58,8 @@ export function MultiFileInput({
   accept,
   required = true,
   existingFiles = [],
+  reportId,
+  deleteExistingAction,
 }: {
   label: string;
   name: string;
@@ -69,13 +71,19 @@ export function MultiFileInput({
     url: string;
     size?: number;
   }>;
+  reportId?: string;
+  deleteExistingAction?: (formData: FormData) => Promise<{
+    success: boolean;
+    message: string;
+  }>;
 }) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const selectedFilesRef = useRef<File[]>([]);
-  const [removedKeys, setRemovedKeys] = useState<Set<string>>(new Set());
+  const [storedFiles, setStoredFiles] = useState(existingFiles);
+  const [isDeleting, startDeleteTransition] = useTransition();
 
   function syncInputFiles(input: HTMLInputElement, files: File[]) {
     const transfer = new DataTransfer();
@@ -93,12 +101,28 @@ export function MultiFileInput({
     setStatus(nextFiles.length ? `${nextFiles.length} file siap.` : "");
   }
 
-  function setExistingFileRemoved(key: string, removed: boolean) {
-    setRemovedKeys((current) => {
-      const next = new Set(current);
-      if (removed) next.add(key);
-      else next.delete(key);
-      return next;
+  function deleteExistingFile(file: (typeof existingFiles)[number]) {
+    if (!reportId || !deleteExistingAction) return;
+    if (!window.confirm(`Hapus lampiran "${file.name}" sekarang?`)) return;
+
+    setStatus(`Menghapus ${file.name}...`);
+    const formData = new FormData();
+    formData.set("report_id", reportId);
+    formData.set("field_name", name);
+    formData.set("key", file.key);
+
+    startDeleteTransition(async () => {
+      try {
+        const result = await deleteExistingAction(formData);
+        if (result.success) {
+          setStoredFiles((current) =>
+            current.filter((storedFile) => storedFile.key !== file.key),
+          );
+        }
+        setStatus(result.message);
+      } catch {
+        setStatus("Gagal menghapus lampiran. Silakan coba lagi.");
+      }
     });
   }
 
@@ -142,26 +166,20 @@ export function MultiFileInput({
         className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-teal-700 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-white"
       />
       {status ? <span className="text-xs font-normal text-slate-500">{status}</span> : null}
-      {existingFiles.length ? (
+      {storedFiles.length ? (
         <div className="grid gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 font-normal">
           <span className="text-xs font-semibold text-slate-700">File tersimpan</span>
           <ul className="grid gap-1">
-            {existingFiles.map((file) => {
-              const removed = removedKeys.has(file.key);
-              return (
+            {storedFiles.map((file) => (
                 <li
                   key={file.key}
-                  className={`flex min-w-0 items-center gap-2 rounded-md px-1 py-1 ${
-                    removed ? "bg-red-50" : ""
-                  }`}
+                  className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1"
                 >
                   <a
                     href={file.url}
                     target="_blank"
                     rel="noreferrer"
-                    className={`flex min-w-0 flex-1 items-center gap-2 text-xs hover:text-teal-800 ${
-                      removed ? "text-slate-400 line-through" : "text-teal-700"
-                    }`}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-xs text-teal-700 hover:text-teal-800"
                     title={`Buka ${file.name}`}
                   >
                     <FileText className="size-4 shrink-0" aria-hidden="true" />
@@ -175,22 +193,24 @@ export function MultiFileInput({
                     </span>
                     <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
                   </a>
-                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs font-medium text-slate-600">
-                    <input
-                      type="checkbox"
-                      name={`${name}_remove`}
-                      value={file.key}
-                      checked={removed}
-                      onChange={(event) =>
-                        setExistingFileRemoved(file.key, event.currentTarget.checked)
-                      }
-                      className="size-4 rounded border-slate-300 text-red-600 focus:ring-red-500"
-                    />
-                    {removed ? "Akan dihapus" : "Hapus"}
-                  </label>
+                  {reportId && deleteExistingAction ? (
+                    <button
+                      type="button"
+                      onClick={() => deleteExistingFile(file)}
+                      disabled={isDeleting}
+                      className="grid size-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-wait disabled:opacity-50"
+                      aria-label={`Hapus ${file.name}`}
+                      title={`Hapus ${file.name} sekarang`}
+                    >
+                      {isDeleting ? (
+                        <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Trash2 className="size-3.5" aria-hidden="true" />
+                      )}
+                    </button>
+                  ) : null}
                 </li>
-              );
-            })}
+              ))}
           </ul>
         </div>
       ) : null}

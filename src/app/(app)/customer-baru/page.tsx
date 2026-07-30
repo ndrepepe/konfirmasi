@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { createCustomerBaru, deleteCustomerBaru, updateCustomerBaru } from "@/app/actions/reports";
+import {
+  createCustomerBaru,
+  deleteCustomerBaru,
+  deleteCustomerBaruAttachment,
+  updateCustomerBaru,
+} from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchScopedSalesSelect } from "@/components/branch-scoped-fields";
 import { DataPanelSkeleton, FormPanelSkeleton } from "@/components/loading-panels";
@@ -101,6 +106,10 @@ async function CustomerBaruContent({
               accept="image/*"
               required={!editingRow}
               existingFiles={existingConfirmationFiles}
+              reportId={editingRow?.id}
+              deleteExistingAction={
+                editingRow ? deleteCustomerBaruAttachment : undefined
+              }
             />
             <div className="flex flex-col gap-2 sm:flex-row">
               <SubmitButton>{editingRow ? "Update" : "Simpan"}</SubmitButton>

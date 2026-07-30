@@ -71,6 +71,102 @@ async function getEditableReport(profile: Profile, table: string, id: string) {
   };
 }
 
+type DeleteAttachmentOptions = {
+  table: string;
+  allowedFields: string[];
+  forbiddenRole?: Profile["role"];
+};
+
+export type DeleteAttachmentResult = {
+  success: boolean;
+  message: string;
+};
+
+async function deleteReportAttachment(
+  formData: FormData,
+  options: DeleteAttachmentOptions,
+): Promise<DeleteAttachmentResult> {
+  try {
+    const profile = await requireProfile();
+    if (profile.role === options.forbiddenRole) {
+      return { success: false, message: "Anda tidak memiliki akses menghapus lampiran ini." };
+    }
+
+    const id = String(formData.get("report_id") ?? "");
+    const fieldName = String(formData.get("field_name") ?? "");
+    const key = String(formData.get("key") ?? "");
+    if (!id || !key || !options.allowedFields.includes(fieldName)) {
+      return { success: false, message: "Data lampiran tidak valid." };
+    }
+
+    const { admin, row } = await getEditableReport(profile, options.table, id);
+    const current = parseStoredAttachments(row[fieldName]);
+    const target = current.find((file) => file.key === key);
+    if (!target) {
+      return { success: false, message: "Lampiran tidak ditemukan pada laporan." };
+    }
+
+    let query = admin
+      .from(options.table)
+      .update({ [fieldName]: current.filter((file) => file.key !== key) })
+      .eq("id", id);
+    if (!canViewAllBranches(profile)) {
+      const branchIds = getAssignedBranchIds(profile);
+      if (!branchIds.length) {
+        return { success: false, message: "User belum memiliki akses cabang." };
+      }
+      query = query.eq("created_by", profile.id).in("branch_id", branchIds);
+    }
+
+    const { data, error } = await query;
+    if (error || !Array.isArray(data) || !data.length) {
+      return {
+        success: false,
+        message: error?.message ?? "Data tidak ditemukan atau tidak dapat diedit.",
+      };
+    }
+
+    try {
+      await deleteStoredAttachments([target]);
+      return { success: true, message: "Lampiran berhasil dihapus." };
+    } catch {
+      return {
+        success: true,
+        message: "Lampiran dihapus dari laporan, tetapi file storage perlu dibersihkan.",
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Gagal menghapus lampiran.",
+    };
+  }
+}
+
+export async function deleteCustomerBaruAttachment(formData: FormData) {
+  return deleteReportAttachment(formData, {
+    table: "customer_baru_reports",
+    allowedFields: ["confirmation_file"],
+    forbiddenRole: "admin_cabang",
+  });
+}
+
+export async function deletePemenuhanPoAttachment(formData: FormData) {
+  return deleteReportAttachment(formData, {
+    table: "pemenuhan_po_reports",
+    allowedFields: ["po_file", "confirmation_file"],
+    forbiddenRole: "accounting",
+  });
+}
+
+export async function deletePenagihanAttachment(formData: FormData) {
+  return deleteReportAttachment(formData, {
+    table: "penagihan_reports",
+    allowedFields: ["proof_file"],
+    forbiddenRole: "admin_cabang",
+  });
+}
+
 async function requireSuperUser() {
   const profile = await requireProfile();
   if (profile.role !== "super_user") redirect("/dashboard");

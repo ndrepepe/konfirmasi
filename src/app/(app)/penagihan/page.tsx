@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { createPenagihan, deletePenagihan, updatePenagihan } from "@/app/actions/reports";
+import {
+  createPenagihan,
+  deletePenagihan,
+  deletePenagihanAttachment,
+  updatePenagihan,
+} from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
 import { DataPanelSkeleton, FormPanelSkeleton } from "@/components/loading-panels";
@@ -88,6 +93,10 @@ async function PenagihanContent({
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
               required={!editingRow}
               existingFiles={existingProofFiles}
+              reportId={editingRow?.id}
+              deleteExistingAction={
+                editingRow ? deletePenagihanAttachment : undefined
+              }
             />
             <div className="flex flex-col gap-2 sm:flex-row">
               <SubmitButton>{editingRow ? "Update" : "Simpan"}</SubmitButton>

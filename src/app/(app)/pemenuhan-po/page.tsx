@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { createPemenuhanPo, deletePemenuhanPo, updatePemenuhanPo } from "@/app/actions/reports";
+import {
+  createPemenuhanPo,
+  deletePemenuhanPo,
+  deletePemenuhanPoAttachment,
+  updatePemenuhanPo,
+} from "@/app/actions/reports";
 import { Guard } from "@/components/app-shell";
 import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
 import { DataPanelSkeleton, FormPanelSkeleton } from "@/components/loading-panels";
@@ -139,6 +144,10 @@ async function PemenuhanPoContent({
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
               required={!editingRow}
               existingFiles={existingPoFiles}
+              reportId={editingRow?.id}
+              deleteExistingAction={
+                editingRow ? deletePemenuhanPoAttachment : undefined
+              }
             />
             <Input label="Contact Person" name="contact_person" defaultValue={String(editingRow?.contact_person ?? "")} />
             <Input label="No HP" name="phone" defaultValue={String(editingRow?.phone ?? "")} />
@@ -148,6 +157,10 @@ async function PemenuhanPoContent({
               accept="image/*"
               required={!editingRow}
               existingFiles={existingConfirmationFiles}
+              reportId={editingRow?.id}
+              deleteExistingAction={
+                editingRow ? deletePemenuhanPoAttachment : undefined
+              }
             />
             <div className="flex flex-col gap-2 sm:flex-row">
               <SubmitButton>{editingRow ? "Update" : "Simpan"}</SubmitButton>
