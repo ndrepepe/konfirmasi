@@ -122,6 +122,7 @@ export async function getActiveCustomers(profile: Profile) {
 export async function getReports(
   table: string,
   profile: Profile,
+  options: { includeAllCreatorsInAssignedBranches?: boolean } = {},
 ) {
   const supabase = createAdminClient();
   let query = supabase
@@ -133,7 +134,10 @@ export async function getReports(
   if (!canViewAllBranches(profile)) {
     const branchIds = getAssignedBranchIds(profile);
     if (!branchIds.length) return [];
-    query = query.in("branch_id", branchIds).eq("created_by", profile.id);
+    query = query.in("branch_id", branchIds);
+    if (!options.includeAllCreatorsInAssignedBranches) {
+      query = query.eq("created_by", profile.id);
+    }
   }
 
   const { data, error } = await query;

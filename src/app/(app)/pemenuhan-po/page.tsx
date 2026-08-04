@@ -71,7 +71,9 @@ async function PemenuhanPoContent({
 }) {
   const [branches, rows] = await Promise.all([
     getBranches(),
-    getReports("pemenuhan_po_reports", profile),
+    getReports("pemenuhan_po_reports", profile, {
+      includeAllCreatorsInAssignedBranches: profile.role === "accounting",
+    }),
   ]);
   const editingRow = rows.find((row) => row.id === params.edit);
   const canInputPemenuhanPo = profile.role !== "accounting";
@@ -99,7 +101,7 @@ async function PemenuhanPoContent({
         rows={rows}
         editHrefBase={canInputPemenuhanPo ? "/pemenuhan-po" : undefined}
         viewHrefBase="/pemenuhan-po"
-        viewOwnerId={profile.role === "super_user" ? undefined : profile.id}
+        viewOwnerId={profile.role === "admin_cabang" ? profile.id : undefined}
         deleteAction={profile.role === "super_user" ? deletePemenuhanPo : undefined}
         columns={[
           { key: "customer_name", label: "Customer" },

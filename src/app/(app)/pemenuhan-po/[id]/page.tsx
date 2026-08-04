@@ -28,7 +28,10 @@ export default async function PemenuhanPoDetailPage({
   if (profile.role !== "super_user") {
     const branchIds = getAssignedBranchIds(profile);
     if (!branchIds.length) notFound();
-    query = query.eq("created_by", profile.id).in("branch_id", branchIds);
+    query = query.in("branch_id", branchIds);
+    if (profile.role !== "accounting") {
+      query = query.eq("created_by", profile.id);
+    }
   }
   const { data, error } = await query.maybeSingle();
 
