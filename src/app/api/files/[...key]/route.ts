@@ -22,31 +22,36 @@ async function canReadAttachment(storageKey: string, profile: Awaited<ReturnType
   const sql = getSql();
   const pattern = `%${storageKey}%`;
   const rows = await sql`
-    select created_by, branch_id
+    select report_kind, created_by, branch_id
     from (
-      select created_by, branch_id
+      select 'customer_baru'::text as report_kind, created_by, branch_id
       from customer_baru_reports
       where confirmation_file::text like ${pattern}
       union all
-      select created_by, branch_id
+      select 'pemenuhan_po'::text as report_kind, created_by, branch_id
       from pemenuhan_po_reports
       where po_file::text like ${pattern}
          or confirmation_file::text like ${pattern}
       union all
-      select created_by, branch_id
+      select 'penagihan'::text as report_kind, created_by, branch_id
       from penagihan_reports
       where proof_file::text like ${pattern}
     ) attachment
     limit 1
   `;
-  const attachment = rows[0] as { created_by: string; branch_id: string } | undefined;
+  const attachment = rows[0] as
+    | { report_kind: string; created_by: string; branch_id: string }
+    | undefined;
   if (!attachment) return false;
   if (profile.role === "super_user") return true;
 
-  return (
-    attachment.created_by === profile.id &&
-    getAssignedBranchIds(profile).includes(attachment.branch_id)
-  );
+  const hasBranchAccess = getAssignedBranchIds(profile).includes(attachment.branch_id);
+  if (!hasBranchAccess) return false;
+  if (profile.role === "accounting" && attachment.report_kind === "pemenuhan_po") {
+    return true;
+  }
+
+  return attachment.created_by === profile.id;
 }
 
 export async function GET(
