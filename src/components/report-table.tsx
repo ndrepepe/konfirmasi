@@ -1,5 +1,5 @@
 import { SearchableTable, type SearchableColumn } from "@/components/searchable-table";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib, toDateInputValue } from "@/lib/date-time";
 import type { ReportRow } from "@/lib/types";
 
 export function ReportTable({
@@ -8,6 +8,7 @@ export function ReportTable({
   editHrefBase,
   viewHrefBase,
   viewOwnerId,
+  dateFilter,
   deleteAction,
 }: {
   rows: ReportRow[];
@@ -15,6 +16,7 @@ export function ReportTable({
   editHrefBase?: string;
   viewHrefBase?: string;
   viewOwnerId?: string;
+  dateFilter?: { key: string; label: string };
   deleteAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const tableColumns: SearchableColumn[] = [
@@ -32,6 +34,9 @@ export function ReportTable({
         ? `${viewHrefBase}/${row.id}`
         : undefined,
     deleteLabel: `data ${row.branches?.code ?? "laporan"} ini`,
+    filterValues: dateFilter
+      ? { [dateFilter.key]: toDateInputValue(row[dateFilter.key]) }
+      : undefined,
     cells: {
       branch: row.branches?.name ?? row.branches?.code ?? "-",
       ...Object.fromEntries(
@@ -50,6 +55,7 @@ export function ReportTable({
       rows={tableRows}
       columns={tableColumns}
       emptyLabel="Belum ada data laporan."
+      dateFilter={dateFilter}
       deleteAction={deleteAction}
     />
   );

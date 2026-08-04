@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Search } from "lucide-react";
+import { CalendarDays, Eye, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DeleteButton } from "@/components/delete-button";
@@ -16,6 +16,7 @@ export type SearchableColumn = {
 export type SearchableRow = {
   id: string;
   cells: Record<string, string>;
+  filterValues?: Record<string, string>;
   editHref?: string;
   viewHref?: string;
   deleteLabel?: string;
@@ -26,16 +27,19 @@ export function SearchableTable({
   columns,
   emptyLabel,
   showControls = true,
+  dateFilter,
   deleteAction,
 }: {
   rows: SearchableRow[];
   columns: SearchableColumn[];
   emptyLabel: string;
   showControls?: boolean;
+  dateFilter?: { key: string; label: string };
   deleteAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const [query, setQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [selectedDate, setSelectedDate] = useState("");
 
   const filterableColumns = columns.filter((column) => column.filterable);
   const filterOptions = useMemo(
@@ -63,9 +67,14 @@ export function SearchableTable({
         ([key, value]) => !value || row.cells[key] === value,
       );
 
-      return matchesQuery && matchesFilters;
+      const matchesDate =
+        !dateFilter ||
+        !selectedDate ||
+        row.filterValues?.[dateFilter.key] === selectedDate;
+
+      return matchesQuery && matchesFilters && matchesDate;
     });
-  }, [filters, query, rows, showControls]);
+  }, [dateFilter, filters, query, rows, selectedDate, showControls]);
 
   if (!rows.length) {
     return (
@@ -88,8 +97,23 @@ export function SearchableTable({
               className="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
             />
           </label>
-          {filterableColumns.length ? (
+          {filterableColumns.length || dateFilter ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {dateFilter ? (
+                <label className="grid min-w-0 gap-1 text-sm text-slate-700 sm:min-w-44">
+                  <span className="font-medium">{dateFilter.label}</span>
+                  <span className="relative block">
+                    <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(event) => setSelectedDate(event.target.value)}
+                      aria-label={`Filter ${dateFilter.label}`}
+                      className="h-11 w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 text-base outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-100 sm:h-10 sm:text-sm"
+                    />
+                  </span>
+                </label>
+              ) : null}
               {filterableColumns.map((column) => (
                 <div key={column.key} className="min-w-0 sm:min-w-40">
                   <SearchableSelect

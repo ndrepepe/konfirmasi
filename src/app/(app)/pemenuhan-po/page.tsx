@@ -102,6 +102,7 @@ async function PemenuhanPoContent({
         editHrefBase={canInputPemenuhanPo ? "/pemenuhan-po" : undefined}
         viewHrefBase="/pemenuhan-po"
         viewOwnerId={profile.role === "admin_cabang" ? profile.id : undefined}
+        dateFilter={{ key: "po_date", label: "Tanggal PO" }}
         deleteAction={profile.role === "super_user" ? deletePemenuhanPo : undefined}
         columns={[
           { key: "customer_name", label: "Customer" },
