@@ -17,6 +17,8 @@ const allowedTypes = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "audio/ogg",
+  "application/ogg",
 ]);
 
 function getS3Client() {
@@ -64,7 +66,9 @@ export function resolveLocalStoragePath(key: string) {
 export async function uploadAttachment(file: File | null, folder: string) {
   if (!file || file.size === 0) return null;
   if (!allowedTypes.has(file.type)) {
-    throw new Error("Tipe file tidak didukung. Gunakan jpeg, png, webp, pdf, word, atau excel.");
+    throw new Error(
+      "Tipe file tidak didukung. Gunakan jpeg, png, webp, pdf, word, excel, atau audio ogg.",
+    );
   }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").toLowerCase();

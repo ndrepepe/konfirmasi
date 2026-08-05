@@ -16,6 +16,7 @@ const contentTypes: Record<string, string> = {
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   ".xls": "application/vnd.ms-excel",
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".ogg": "audio/ogg",
 };
 
 async function canReadAttachment(storageKey: string, profile: Awaited<ReturnType<typeof requireProfile>>) {

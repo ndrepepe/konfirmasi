@@ -101,9 +101,9 @@ async function CustomerBaruContent({
             <Input label="Contact Person" name="contact_person" defaultValue={String(editingRow?.contact_person ?? "")} />
             <Input label="No HP" name="phone" defaultValue={String(editingRow?.phone ?? "")} />
             <MultiFileInput
-              label="Bukti Konfirmasi (foto WA)"
+              label="Bukti Konfirmasi (WA)"
               name="confirmation_file"
-              accept="image/*"
+              accept="image/*,.ogg,audio/ogg,application/ogg"
               required={!editingRow}
               existingFiles={existingConfirmationFiles}
               reportId={editingRow?.id}

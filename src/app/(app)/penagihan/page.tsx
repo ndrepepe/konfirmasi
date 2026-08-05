@@ -90,7 +90,7 @@ async function PenagihanContent({
             <MultiFileInput
               label="Bukti"
               name="proof_file"
-              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ogg,audio/ogg,application/ogg"
               required={!editingRow}
               existingFiles={existingProofFiles}
               reportId={editingRow?.id}
