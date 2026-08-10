@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import {
-  createPemenuhanPo,
   deletePemenuhanPo,
   deletePemenuhanPoAttachment,
   updatePemenuhanPo,
@@ -122,7 +121,7 @@ async function PemenuhanPoContent({
       {activeView === "input" ? (
         <Panel title={editingRow ? "Edit Konfirmasi PO" : "Form Konfirmasi PO"} className="flex min-h-0 flex-col">
           <PemenuhanPoForm
-            action={editingRow ? updatePemenuhanPo : createPemenuhanPo}
+            action={editingRow ? updatePemenuhanPo : undefined}
             hardRedirectAfterSuccess={!editingRow}
           >
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}

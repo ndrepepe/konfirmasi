@@ -9,7 +9,7 @@ export function PemenuhanPoForm({
   hardRedirectAfterSuccess,
   children,
 }: {
-  action: (formData: FormData) => Promise<ActionResult>;
+  action?: (formData: FormData) => Promise<ActionResult>;
   hardRedirectAfterSuccess: boolean;
   children: React.ReactNode;
 }) {
@@ -18,6 +18,7 @@ export function PemenuhanPoForm({
 
   if (!hardRedirectAfterSuccess) {
     async function passthrough(formData: FormData) {
+      if (!action) throw new Error("Action update Konfirmasi PO tidak tersedia.");
       await action(formData);
     }
 
@@ -33,9 +34,16 @@ export function PemenuhanPoForm({
     setError("");
     setPending(true);
     try {
-      const result = await action(new FormData(event.currentTarget));
-      if (result && !result.success) {
-        setError(result.message ?? "Data Konfirmasi PO gagal disimpan.");
+      const response = await fetch("/api/pemenuhan-po", {
+        method: "POST",
+        body: new FormData(event.currentTarget),
+      });
+      const result = (await response.json().catch(() => null)) as
+        | { success?: boolean; message?: string }
+        | null;
+
+      if (!response.ok || !result?.success) {
+        setError(result?.message ?? "Server gagal memproses data Konfirmasi PO.");
         return;
       }
       window.location.assign("/pemenuhan-po?view=data&created=1");
