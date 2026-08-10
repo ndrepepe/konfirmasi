@@ -11,6 +11,7 @@ import { BranchScopedCustomerSelect } from "@/components/branch-scoped-fields";
 import { DataPanelSkeleton, FormPanelSkeleton } from "@/components/loading-panels";
 import { MultiFileInput } from "@/components/multi-file-input";
 import { PageSubnav, type PageView } from "@/components/page-subnav";
+import { PemenuhanPoForm } from "@/components/pemenuhan-po-form";
 import { ReportTable } from "@/components/report-table";
 import { Input, PageHeader, Panel, SubmitButton } from "@/components/ui";
 import { requireProfile } from "@/lib/auth";
@@ -120,7 +121,10 @@ async function PemenuhanPoContent({
     <>
       {activeView === "input" ? (
         <Panel title={editingRow ? "Edit Konfirmasi PO" : "Form Konfirmasi PO"} className="flex min-h-0 flex-col">
-          <form action={editingRow ? updatePemenuhanPo : createPemenuhanPo} className="grid gap-4">
+          <PemenuhanPoForm
+            action={editingRow ? updatePemenuhanPo : createPemenuhanPo}
+            hardRedirectAfterSuccess={!editingRow}
+          >
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
             <BranchScopedCustomerSelect
               branches={inputBranches}
@@ -179,7 +183,7 @@ async function PemenuhanPoContent({
                 </Link>
               ) : null}
             </div>
-          </form>
+          </PemenuhanPoForm>
         </Panel>
       ) : (
         <div className="grid gap-5">{dataPanel}</div>
