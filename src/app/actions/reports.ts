@@ -286,31 +286,62 @@ export async function deleteCustomerBaru(formData: FormData) {
   await deleteReportRow(formData, "customer_baru_reports", "/customer-baru");
 }
 
-export async function createPemenuhanPo(formData: FormData) {
+export type CreatePemenuhanPoResult = {
+  success: boolean;
+  message?: string;
+};
+
+export async function createPemenuhanPo(
+  formData: FormData,
+): Promise<CreatePemenuhanPoResult> {
   const profile = await requireProfile();
-  const parsed = pemenuhanPoSchema.parse(Object.fromEntries(formData));
+  const parsedResult = pemenuhanPoSchema.safeParse(Object.fromEntries(formData));
+  if (!parsedResult.success) {
+    return {
+      success: false,
+      message: parsedResult.error.issues[0]?.message ?? "Data Konfirmasi PO belum lengkap.",
+    };
+  }
+  const parsed = parsedResult.data;
   if (!canAccessBranch(profile, parsed.branch_id)) {
-    throw new Error("Anda hanya bisa input data cabang sendiri.");
+    return { success: false, message: "Anda hanya bisa input data cabang sendiri." };
   }
   if (!canUseConfiguredBranch(profile, parsed.branch_id)) {
-    throw new Error("Anda hanya bisa input data cabang yang diset untuk user Anda.");
+    return {
+      success: false,
+      message: "Anda hanya bisa input data cabang yang diset untuk user Anda.",
+    };
   }
 
   const supabase = await createClient();
-  const poFile = await uploadAttachments(filesFromForm(formData, "po_file"), "pemenuhan-po/po");
-  const confirmation = await uploadAttachments(
-    filesFromForm(formData, "confirmation_file"),
-    "pemenuhan-po/konfirmasi",
-  );
+  let poFile: StoredAttachment[] = [];
+  let confirmation: StoredAttachment[] = [];
+  try {
+    poFile = await uploadAttachments(
+      filesFromForm(formData, "po_file"),
+      "pemenuhan-po/po",
+    );
+    confirmation = await uploadAttachments(
+      filesFromForm(formData, "confirmation_file"),
+      "pemenuhan-po/konfirmasi",
+    );
 
-  const { error } = await supabase.from("pemenuhan_po_reports").insert({
-    ...parsed,
-    po_file: poFile,
-    confirmation_file: confirmation,
-    created_by: profile.id,
-  });
+    const { error } = await supabase.from("pemenuhan_po_reports").insert({
+      ...parsed,
+      po_file: poFile,
+      confirmation_file: confirmation,
+      created_by: profile.id,
+    });
 
-  if (error) throw new Error(error.message);
+    if (error) throw new Error(error.message);
+    return { success: true };
+  } catch (error) {
+    await cleanupUploaded([...poFile, ...confirmation]);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Data Konfirmasi PO gagal disimpan.",
+    };
+  }
 }
 
 export async function updatePemenuhanPo(formData: FormData) {

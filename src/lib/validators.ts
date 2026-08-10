@@ -47,8 +47,8 @@ export const pemenuhanPoSchema = z.object({
   sales_name: z.string().min(2),
   po_date: z.string().min(1),
   po_number: z.string().min(1),
-  contact_person: z.string().min(2),
-  phone: z.string().min(5),
+  contact_person: z.string().min(1, "Contact Person wajib diisi"),
+  phone: z.string().min(1, "No HP wajib diisi"),
 });
 
 export const penagihanSchema = z.object({
