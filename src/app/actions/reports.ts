@@ -311,7 +311,6 @@ export async function createPemenuhanPo(formData: FormData) {
   });
 
   if (error) throw new Error(error.message);
-  revalidatePath("/pemenuhan-po");
   redirect("/pemenuhan-po?view=data&created=1");
 }
 
