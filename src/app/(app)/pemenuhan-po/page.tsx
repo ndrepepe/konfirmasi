@@ -124,7 +124,10 @@ async function PemenuhanPoContent({
             {editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
             <BranchScopedCustomerSelect
               branches={inputBranches}
-              defaultBranchId={editingRow?.branch_id}
+              defaultBranchId={
+                editingRow?.branch_id ??
+                (profile.role === "admin_cabang" ? profile.branch_id ?? "" : "")
+              }
               defaultCustomerName={String(editingRow?.customer_name ?? "")}
               loadCustomersByBranch
               customerStatus="Aktif"
